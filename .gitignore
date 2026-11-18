@@ -3,3 +3,13 @@ __pycache__/
 .DS_Store
 .venv/
 _site/
+# LaTeX build outputs (the published PDF is docs/paper.pdf)
+paper/web-build/
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.out
+paper/main.pdf

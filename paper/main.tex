@@ -1,0 +1,46 @@
+\documentclass[11pt]{article}
+
+\usepackage{arxiv-style}
+
+% additional packages used by figures / listings
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{listings}
+\usepackage{xcolor}
+% ragged-right paragraph columns for text tables
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{black!25},
+  showstringspaces=false,
+}
+
+\title{Routing Claude Code Sub-Agents\\
+by Model and Effort: A Case Study}
+\author{Pablo Leyva\\\small \href{https://github.com/pleyva2004/subagent-routing-bench}{\texttt{github.com/pleyva2004/subagent-routing-bench}}}
+\date{}
+
+\runningtitle{Routing Claude Code Sub-Agents by Model and Effort}
+
+\begin{document}
+
+\maketitle
+\input{abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-method}
+\input{sections/04-experiments}
+\input{sections/05-discussion}
+\input{sections/06-conclusion}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

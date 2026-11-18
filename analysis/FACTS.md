@@ -32,11 +32,11 @@ Study dates: November 16–17, 2026. Models: Claude Haiku 5.5 (`claude-haiku-5-5
   - Easy set: 2 of 4 briefs passed unchanged; 2 leaked internal helper names, which were removed.
   - Hard set: 3 of 5 passed unchanged; one gained 2 missing interface details and one gained 4 (including a return type a test asserts).
 - One hard task was rejected and rebuilt: its writer re-planted the easy set's bug and named the buggy function in the report.
-- An oracle self-test ran on all 22 tasks: the known-correct answer must pass and doing nothing must fail. It caught one bad task (a feature whose commit also added a dependency); feature tasks now start with the commit's dependency changes applied.
+- An oracle self-test ran on all 22 tasks: the known-correct answer must pass and doing nothing must fail. It caught one bad task (a feature whose commit also added a dependency); feature tasks now start with the commit's dependency changes applied. The fix was in place before any run of the two affected tasks.
 
 ## 2. Experiment 1: reasoning without tools
 
-Design: three task families with exact answers, 10 difficulty levels each, 8 configs (both models at `low`, `medium`, `high`, `xhigh`), one trial per cell. Tools were forbidden, and every transcript was checked: only thinking and text blocks appeared. Levels 6–10 ran as per-family chains that stopped after two failures in a row.
+Design: three task families with exact answers, 10 difficulty levels each, 8 configs (both models at `low`, `medium`, `high`, `xhigh`), one trial per cell. Tools were forbidden, and every transcript was checked: only thinking and text blocks appeared. Levels 6–10 ran as per-family chains that stopped after two failures in a row, counting a failure at level 5; so Haiku `low`'s trace levels above 250 statements never ran.
 
 | Family | What it tests | Levels 1–5 | Levels 6–10 |
 |---|---|---|---|
@@ -47,7 +47,7 @@ Design: three task families with exact answers, 10 difficulty levels each, 8 con
 Results:
 
 - Seating logic: every config solved every level, up to 13 people.
-- Multiplication: every config solved up to 40 × 40 digits, except Haiku `low` (first failure at 25 digits) and Haiku `medium` (first failure at 32). Both errors put correct blocks of digits in the wrong order, and both configs then solved the 40-digit problem.
+- Multiplication: every config solved up to 40 × 40 digits, except Haiku `low` (first failure at 25 digits) and Haiku `medium` (first failure at 32). Both wrong answers had the right length and were correct except for one span of 8 to 10 digits, which held the right digits in the wrong order, and both configs then solved the 40-digit problem.
 - Code trace separated the configs clearly. (Multiplication affected only Haiku `low` and `medium`, and not consistently.)
 
 | Config | Longest solved before first failure | Longest solved at all | Notes |
@@ -83,7 +83,7 @@ Design: 12 tasks, all 10 configs (both models at all five effort levels), one tr
 Results:
 
 - Every config passed every locate, fix and feature task. One Haiku `high` locate failure was caused by the harness (the allowlist denied a chained `echo`, and the agent gave up); after widening the allowlist, a rerun passed. Both rows are in the data, the first marked superseded.
-- Only the 2-bug review separated configs. Every Haiku level, `low` through `max`, and Sonnet `xhigh` missed the planted bug where a shutdown wait loop re-sends the termination signal instead of checking whether the process is alive. Each reported a real, pre-existing flaw nearby instead. Sonnet `low`, `medium`, `high` and `max` found both planted bugs.
+- Only the 2-bug review separated configs. Every Haiku level, `low` through `max`, and Sonnet `xhigh` missed a planted shutdown-loop bug. Each reported a real, pre-existing flaw nearby instead. Sonnet `low`, `medium`, `high` and `max` found both planted bugs.
 - Totals: Sonnet `low`, `medium`, `high` and `max` 12/12; Sonnet `xhigh` 11/12; every Haiku level 11/12.
 - During the pilot, most "false alarms" in reviews turned out to be real defects already in the original commits (two were confirmed by reading the code: a rendering gap and a shutdown-status bug). The review rule was changed and the pilot regraded from saved replies.
 - No false "tests pass" claims, but no fix or feature failed, so this wasn't tested.
@@ -128,7 +128,7 @@ Results:
 
 - Every config solved all three fixes, both terse features and the 4- and 9-file features in all 3 trials.
 - The 15-file, 602-line feature: Sonnet `low` failed once (7 failing tests).
-- The 3-bug review: none of the 12 Sonnet runs, at any effort level, flagged the third planted bug, a model adapter's error handler changed from catching only HTTP errors to catching every exception, which turns parsing errors and code bugs into a quiet "model error" instead of a crash. That change is arguably a robustness choice rather than a defect, and the review prompt asked only for real runtime defects, so the report counts results both ways. Eleven Sonnet runs found the other two bugs; one Sonnet `medium` run found only one of them. Haiku `low` flagged the third bug in 2 of 3 runs.
+- The 3-bug review: none of the 12 Sonnet runs, at any effort level, flagged the third planted bug, an error handler broadened to catch every exception, which turns parsing errors and code bugs into a quiet "model error" instead of a crash. That change is arguably a robustness choice rather than a defect, and the review prompt asked only for real runtime defects, so the report counts results both ways. Eleven Sonnet runs found the other two bugs; one Sonnet `medium` run found only one of them. Haiku `low` flagged the third bug in 2 of 3 runs.
 - False success claims: none confirmed. The one flagged run was the harness anomaly below; the one real failure on a fix or feature didn't claim success.
 - Denied tool calls in the hard set: 189, of which 154 were chained commands (`;`, `||`, pipes, loops) that an allowlist can't match, 15 other `uv` subcommands, 15 `sed -i`, 3 `mkdir`, 1 `python3`, 1 `mv`. An earlier count of 234 double-counted tool results that transcripts repeat in logging entries. Agents retried with simpler commands or the Edit tool; no failure was traced to a denial.
 
@@ -136,14 +136,14 @@ Harness problems found and fixed during this experiment:
 
 - In one Sonnet `high` run of the 602-line feature, a hidden test file was never collected during grading. The run was graded a failure and flagged as a false success claim. The grader now verifies the restored hidden tests, treats a hidden test file with no results as a harness error, and retries. A fresh sample passed; the original row is kept and marked superseded.
 - Saved diffs didn't include new files, so that run couldn't be replayed. Diffs now include new files.
-- The claim parser read an earlier baseline ("107 passed") instead of the final run ("126 passed, 6 skipped, 0 failed"). It now uses the largest pytest-style count in the reply.
+- The claim parser read an earlier baseline count instead of the final run's. It now uses the largest pytest-style count in the reply.
 
 ## 5. Cost
 
 - Prices used (first-party API, November 2026): Sonnet 5.5 $2.00 per million input tokens, $10.00 output, $0.10 cache reads. Haiku 5.5 $0.10 input and $0.50 output for prompts up to 100K tokens, $0.50 and $2.50 beyond. Assumed where not listed: cache writes at 1.25× the input rate; Haiku cache reads at 0.1× the input rate.
 - Dollars are API-equivalent and computed per request from each transcript, applying Haiku's long-prompt tier per request. They are not subscription usage.
 - Haiku costs about 1/20 as much per token as Sonnet. It used about 2.5× the output tokens and about 2× the agent time of Sonnet `low`, and still cost about 1/5 as much per successful coding task.
-- Above `medium`, effort added cost without accuracy: Sonnet `xhigh` cost about 2.2× (easy set) and 2.6× (hard set) Sonnet `low` per success; `max` cost about 8× (Sonnet) and 20× (Haiku) its `low` level on the easy set.
+- Above `medium`, effort added cost with no accuracy gain we could detect (nearly every task passed at every config): Sonnet `xhigh` cost about 2.2× (easy set) and 2.6× (hard set) Sonnet `low` per success; `max` cost about 8× (Sonnet) and 19× (Haiku) its `low` level on the easy set.
 - Whole study: the coding runs cost about $24 (easy set, 120 runs) and $34 (hard set, 150 runs) at API prices.
 
 ## 6. Routing table adopted
@@ -161,7 +161,7 @@ The cmux-subagent skill's routing table was rewritten from these results:
 Rules, with what each rests on:
 
 - Effort above `medium` bought nothing on coding tasks. Measured.
-- Never run Haiku above `medium`. From the no-tools test, where Haiku `high` and `xhigh` took a wrong shortcut; on coding they matched `low` at higher cost.
+- Haiku above `medium` is not recommended. One trial each: `high` and `xhigh` took a wrong shortcut at 40 statements in the no-tools test, though `xhigh` solved 400 where `medium` stopped at 250; on coding they matched `low` at higher cost.
 - A second model looks more useful than more effort. A handful of cases, with exceptions (section 7).
 - Retry a failed Haiku change once on Sonnet `medium`. Untested.
 - Outside what was measured, start with Sonnet `medium`. Judgment.
@@ -178,7 +178,7 @@ Modeling framework (proposed; the data are too saturated to fit most of it yet):
 
 - Item response model: `P(pass | config c, task t) = σ(θ_c − b_t)`, with `θ_c = α_model + δ_effort + u_(model,task)`. The `u` term captures model-specific blind spots that persist across effort levels. The hardest task a config passes 80% of the time is `b = θ_c − ln 4`.
 - Difficulty horizon for size-graded tasks: `P(pass) = σ(α_c − β_c · ln x)`, so the 50% horizon is `x₅₀ = e^(α_c / β_c)`.
-- Cost per completed task: `c / p` when failures are detected and retried. A fallback chain (Haiku first, Sonnet on failure) costs `c_H + (1 − p_H) · c_S`: about $0.046 per completed task at 99.7% success here, against $0.21 per completed task for Sonnet `medium` alone ($0.189 per attempt at 90% success). With undetected failures, minimize `c + (1 − p) · L`, where L is the cost of a missed defect.
+- Cost per completed task: `c / p` when failures are detected and retried. A fallback chain (Haiku first, Sonnet on failure) costs `c_H + (1 − p_H) · c_S`: about $0.046 per task, with the chain completing 99.7% of tasks (Haiku `low` alone passed 29 of 30), against $0.21 per completed task for Sonnet `medium` alone ($0.189 per attempt at 90% success). With undetected failures, minimize `c + (1 − p) · L`, where L is the cost of a missed defect.
 - Two reviewers miss a bug together with probability `q_A · q_B` only if their misses are independent. What was seen: some misses repeated across every effort level of one model (every Haiku level missed the same review bug; no Sonnet run at any of four levels flagged the catch-all handler), and the other model usually caught them (Sonnet `low`, `medium`, `high` and `max` found Haiku's miss; Haiku `low` flagged the catch-all in 2 of 3 runs). There were exceptions both ways: Sonnet `xhigh` shared Haiku's miss, and one Haiku `low` run shared Sonnet's. In the reasoning test, pairs of effort levels within a model gave identical wrong answers. This is a handful of cases, not an estimate.
 
 ## 8. Limitations
@@ -187,7 +187,7 @@ Modeling framework (proposed; the data are too saturated to fit most of it yet):
 - Almost every task passed at every config, so failure thresholds for coding were not found, and "effort didn't help" may be a ceiling effect.
 - The error-correlation pattern rests on a handful of cases and has exceptions in both directions.
 - Dollar figures were computed from session transcripts, which aren't published, so they can't be re-derived from this repository alone.
-- Tasks, briefs and answer keys were written by Sonnet. One planted review bug was arguably not a bug; answer-key validity was checked by the oracle and spot reads, not by people.
+- Tasks, briefs and answer keys were written by Sonnet. One planted review bug was arguably not a bug; answer-key validity was checked by the oracle and by spot reads from the orchestrating model, not by people.
 - Conditions changed during the study: the allowlist was widened partway through the 10-config sweep, and one grading anomaly was replaced by a fresh sample.
 - Agents loaded the user's global Claude Code instructions, as they would in real use.
 - Dollar figures depend on assumed cache multipliers, not billing data.

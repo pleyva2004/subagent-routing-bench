@@ -1,4 +1,5 @@
 """Assemble tasks.json from the build folders. Run after briefs, bugs, and review keys are final."""
+# Commit ids of the private target repo are replaced with COMMIT_* placeholders.
 from __future__ import annotations
 
 import json
@@ -9,7 +10,7 @@ from typing import Any
 ROOT = os.path.expanduser("~/.cache/coding-bench")
 REPO = os.environ.get("BENCH_REPO", f"{ROOT}/repos/target")  # the target repo clone
 B = f"{ROOT}/build"
-HEAD = "60913d6"
+HEAD = "COMMIT_HEAD"
 
 
 def git(*a: str, cwd: str = REPO) -> str:
@@ -47,7 +48,7 @@ for i, k in enumerate(["near", "far"], 1):
 
 # Feature: real commits replayed from their parent, graded by the commit's own tests.
 adm = {r["commit"]: r for r in json.load(open(f"{ROOT}/admission.json"))}
-for i, c in enumerate(["bf88a3f", "ec8bef6", "d1d25cf", "43a549e"], 1):
+for i, c in enumerate(["COMMIT_F1", "COMMIT_F2", "COMMIT_F3", "COMMIT_F4"], 1):
     r = adm[c]
     tasks.append({"id": f"feature-{i}-{c}", "type": "feature", "level": i,
                   "base": git("rev-parse", f"{c}^").strip(), "brief": open(f"{B}/replay-{c}/brief.md").read().strip(),
@@ -55,7 +56,7 @@ for i, c in enumerate(["bf88a3f", "ec8bef6", "d1d25cf", "43a549e"], 1):
                   "expected_files": r["src_files"]})
 
 # Review: a real commit's diff (src + tests) applied uncommitted on its parent, with 0, 1, or 2 planted bugs.
-for i, (c, planted) in enumerate([("b0b1a97", False), ("e966b08", True), ("0c62b65", True)], 1):
+for i, (c, planted) in enumerate([("COMMIT_R1", False), ("COMMIT_R2", True), ("COMMIT_R3", True)], 1):
     patch = f"{B}/review-{c}.patch"
     if planted:
         open(patch, "w").write(git("diff", f"{c}^", "--", "src", "tests", cwd=f"{B}/review-{c}/wt"))

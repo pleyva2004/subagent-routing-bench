@@ -53,7 +53,7 @@ This table comes from measurements made in November 2026 on one private Python r
 | Code changes when wall-clock time matters | Sonnet `medium` | 30/30 passed, about 2x faster than Haiku `low` (43 s vs 78 s per run), about 5x the cost |
 | Code review | Haiku `low` and Sonnet `medium` in parallel on the same diff; merge their findings | Each model had a blind spot the other usually covered: every Haiku level missed one planted bug, and no Sonnet run flagged another |
 | Long exact reasoning with no tools, such as tracing code by hand | Sonnet `xhigh` | The only config that traced 1,300 statements correctly; Sonnet `low` to `high` failed at 600 |
-| `max` | Only when the user explicitly asks for it | 8x to 20x the cost of `low`, with no accuracy gain in any test |
+| `max` | Only when the user explicitly asks for it | 8x (Sonnet) to 19x (Haiku) the cost of `low`, with no accuracy gain in any test |
 
 - Effort above `medium` bought nothing on coding tasks: Sonnet `xhigh` cost about 2.2x to 2.6x Sonnet `low` per success, with no gain.
 - Don't run Haiku above `medium`. At `high` and `xhigh` it took a wrong shortcut on an easy no-tools task, and on coding it gained nothing over `low`.

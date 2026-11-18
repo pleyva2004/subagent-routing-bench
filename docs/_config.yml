@@ -1,5 +1,0 @@
-title: Routing Claude sub-agents by model and effort
-description: A case study of Claude Haiku 5.5 and Claude Sonnet 5.5 at every effort level, run as Claude Code sub-agents in cmux panes.
-theme: jekyll-theme-primer
-exclude:
-  - sections/

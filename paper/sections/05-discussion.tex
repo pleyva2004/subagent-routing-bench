@@ -1,0 +1,91 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{Routing recommendations}\label{sec:routing}
+
+We rewrote the routing table of our sub-agent launcher from these results. Table~\ref{tab:routing} lists each slice of work, the configuration we now use, the evidence behind it, and how strong that evidence is. The last column matters most: only some rows were measured.
+
+\begin{table}[H]
+\centering
+\caption{Routing table adopted, with the basis of each row.}
+\label{tab:routing}
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{L{2.6cm} L{3.4cm} L{5.6cm} L{2.6cm}}
+\toprule
+\textbf{Slice} & \textbf{Model and effort} & \textbf{Evidence} & \textbf{Basis} \\
+\midrule
+Lookups & Haiku \texttt{low} & Every config passed every locate task; Haiku \texttt{low} was cheapest. & Measured (3 tasks, one trial each) \\
+Code changes (fixes, features up to about 15 files) & Haiku \texttt{low}; Sonnet \texttt{medium} when wall-clock time matters & Pooled over both sets, both passed 30/30 code changes. Sonnet \texttt{medium} ran faster than Haiku \texttt{low} (43\,s vs 78\,s per hard-set run). & Measured; every configuration near ceiling, so this ranks cost \\
+Code review & Haiku \texttt{low} and Sonnet \texttt{medium} in parallel; merge findings & Some misses repeated at every effort level of one model; the other model usually caught them, with exceptions. & A handful of cases \\
+Long exact reasoning without tools & Sonnet \texttt{xhigh} & The only config that never failed the code trace. & From the no-tools test \\
+Haiku above \texttt{medium} & Not recommended & One trial each: \texttt{high} and \texttt{xhigh} took a wrong shortcut at 40 statements, though \texttt{xhigh} solved 400 where \texttt{medium} stopped at 250; on coding, no gain over \texttt{low} at higher cost. & From the no-tools test and the easy set \\
+\texttt{max} & Only on explicit request & About 8$\times$ (Sonnet) and 19$\times$ (Haiku) the cost of \texttt{low} on the easy set; no accuracy gain visible (ceiling effect). & Measured cost \\
+Failed Haiku change & Retry once on Sonnet \texttt{medium} & Not run. & Untested \\
+Anything else & Sonnet \texttt{medium} & No data. & Judgment \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The main rules follow. Effort above \texttt{medium} bought nothing we could detect on coding tasks; this is measured, but see Section~\ref{sec:limitations} for the ceiling effect. A second model looks more useful than more effort for review (Section~\ref{sec:second-model}). Where we have no measurements, we start with Sonnet \texttt{medium}; this is judgment, not a result.
+
+\subsection{Modeling the results}\label{sec:modeling}
+
+Most coding cells passed, so most of the framework below cannot be fitted yet. For each piece we say what the current data can and cannot estimate.
+
+\paragraph{Binomial uncertainty.} We use Wilson 95\,\% intervals~\cite{wilson1927probable} because they behave near 100\,\%. One cell with 3 of 3 passes has an interval of 44--100\,\%; 2 of 3 gives 21--94\,\%. Pooled over both sets, code changes gave Haiku \texttt{low} 30/30 (89--100\,\%), Sonnet \texttt{medium} 30/30 (89--100\,\%), and Sonnet \texttt{low} 29/30 (83--99\,\%). On all hard-set tasks as graded, Haiku \texttt{low} scored 29/30 (83--99\,\%), Sonnet \texttt{low} 26/30 (70--95\,\%), and Sonnet \texttt{medium}, \texttt{high} and \texttt{xhigh} 27/30 (74--97\,\%). The intervals overlap, so no pass-rate difference between configs is established, and even 30/30 cannot exclude a failure rate near 10\,\%.
+
+\paragraph{Item response model.} In the style of Rasch~\cite{rasch1960probabilistic}, we would model $P(\mathrm{pass} \mid c, t) = \sigma(\theta_c - b_t)$ for config $c$ and task $t$, with $\theta_c = \alpha_{\mathrm{model}} + \delta_{\mathrm{effort}} + u_{(\mathrm{model},\,\mathrm{task})}$. Here $b_t$ is task difficulty, $\alpha$ a model's base skill, $\delta$ the effect of effort, and $u$ a model-by-task term for blind spots that persist across effort levels. The hardest task a config passes 80\,\% of the time sits at $b = \theta_c - \ln 4$. The current data cannot estimate this reliably for coding: with nearly all passes, most $b_t$ are unbounded and $\delta$ is near zero but poorly bounded. The term $u$ needs tasks that some configs pass and others fail; the review tasks Haiku missed at every level and the code trace are the only suggestive cases.
+
+\paragraph{Difficulty horizon.} For tasks graded by size $x$ (digits, statements, files), in the spirit of the 50\,\% time horizon of Kwa et al.~\cite{kwa2025longtasks}, we would fit $P(\mathrm{pass}) = \sigma(\alpha_c - \beta_c \ln x)$, so that $x_{50} = e^{\alpha_c / \beta_c}$. Only the code trace supports this, because length is a clean axis there. The longest trace solved before the first failure ranged from 20 statements to 1,300 or more, but with one trial per cell and a few lengths past the break $\beta_c$ is poorly determined, and some configs passed again after failing, so the curve is not monotone. We cannot estimate a coding horizon: the only code-change failure was one Sonnet \texttt{low} run in three on the largest feature.
+
+\paragraph{Cost per completed task.} If failures are detected and retried on the same config, expected cost is $c/p$, with $c$ the cost per attempt and $p$ the pass rate. For a fallback chain, Haiku first and Sonnet on failure, it is $c_H + (1 - p_H)\,c_S$. Here the chain costs about \$0.046 per task and completes 99.7\,\% of tasks (Haiku alone passed 29 of 30), against \$0.21 for Sonnet \texttt{medium} alone (\$0.189 per attempt at 90\,\% success). These figures rest on pass rates with wide intervals. If a failure goes undetected, nothing is retried, and the quantity to minimize is $c + (1 - p)\,L$, where $L$ is the cost of a missed defect. We measured no $L$. We know of no undetected failure, though one grading error produced a false failure. A failed change with no hidden tests falls in the second case. We saw no false ``tests pass'' claims, but almost no change failed, so that was barely tested.
+
+\subsection{A second model versus more effort}\label{sec:second-model}
+
+Two reviewers miss a bug together with probability $q_A q_B$ only if their misses are independent; if fully correlated, the pair misses with probability $q_A$ and the second reviewer adds cost but no coverage. The cases we saw point toward correlation within a model:
+
+\begin{itemize}[leftmargin=1.6em, itemsep=1pt]
+  \item Every Haiku level missed the same planted bug in the 2-bug review, and no Sonnet run, at any of four levels, flagged the broadened error handler in the 3-bug review.
+  \item The other model usually caught them: Sonnet \texttt{low}, \texttt{medium}, \texttt{high} and \texttt{max} found Haiku's miss, and Haiku \texttt{low} flagged the broadened handler in 2 of 3 runs.
+  \item There were exceptions both ways: Sonnet \texttt{xhigh} shared Haiku's miss, and one Haiku \texttt{low} run shared Sonnet's.
+  \item In the no-tools test, pairs of effort levels within a model gave identical wrong answers.
+\end{itemize}
+
+We state this as a hypothesis: a model's blind spots are shared across its effort levels more than across models. It is a handful of cases, one involving a bug that is arguably a design choice, so we give no interval. A larger study would test it by planting many bugs of known validity, running several trials per config, and computing for each pair of configs how often both miss the same bug against the $q_A q_B$ expected under independence, within a model and across models, with intervals. It would also compare the best two-model pair with the best single config at equal cost. We would fix this analysis, including the exclusion rules, before running.
+
+\subsection{Lessons for building agent benchmarks}\label{sec:lessons}
+
+\paragraph{Folder trust and worktrees.} Claude Code asks whether to trust any new folder, but not in an empty one, so test the prompt in a fresh worktree and accept it once by hand (Section~\ref{sec:harness}).
+
+\paragraph{Permission friction from chained commands.} An allowlist matches one command at a time, but agents chain commands, so read the denial log before the first full sweep and widen the allowlist for harmless shapes (Section~\ref{sec:exp-hard}).
+
+\paragraph{Grading checks.} Three harness problems, a false failure, an unreplayable run and a misread claim, each needed a check of its own (Section~\ref{sec:exp-hard}).
+
+\paragraph{Real bugs in clean commits.} Review tasks built from real diffs contain real defects the task author did not plant, and most of our pilot false alarms were of this kind. Penalizing them would punish good reviews, but the resulting rule measures recall on planted bugs, not precision.
+
+\paragraph{AI-written tasks need verification.} Model-written briefs leaked helper names or omitted interface details, and one hard task re-planted an earlier bug. A separate verifier caught these, and an oracle self-test, in which the known-correct answer must pass and doing nothing must fail, caught a task whose commit also added a dependency.
+
+\subsection{Ethics}\label{sec:ethics}
+
+The code of the private repository used in the coding experiments is withheld, and the report describes its components only generically. The study involved no human subjects. Tasks and answer keys were written by models and checked by models and the oracle self-test, not by people. Dollar figures are API-equivalent estimates, not subscription usage or billing data.
+
+\subsection{Limitations}\label{sec:limitations}
+
+\paragraph{One private repository, one language, 22 coding tasks.} The 10-config sweep had one trial per cell and the hard set three. The routing table is therefore a starting point for similar Python agent code, not a general result, and a single cell with 3 of 3 passes has an interval of 44--100\,\%.
+
+\paragraph{Ceiling effect.} Almost every task passed at every config, so we did not find where coding fails. That effort above \texttt{medium} bought nothing may mean only that the tasks were too easy to need it; effort clearly mattered only in the no-tools trace, which is not a coding task.
+
+\paragraph{Error correlation rests on a handful of cases.} The pattern has exceptions in both directions, so the second-model claim is a hypothesis, not an estimate.
+
+\paragraph{Model-written tasks and keys.} One planted review bug was arguably not a bug. Keys were checked by the oracle and spot reads, not by people, so some failures may be key errors, and Sonnet-written tasks may favor Sonnet. We report hard-set pass rates both as graded and with that bug set aside.
+
+\paragraph{Conditions changed during the study.} The allowlist was widened partway through the 10-config sweep, and one grading anomaly was replaced by a fresh sample, with the original row kept and marked. Early and late runs were therefore not under identical conditions, and we did not test whether the widening changed time, tokens or outcomes.
+
+\paragraph{Global instructions were loaded.} Agents loaded the user's global Claude Code instructions, as in real use. This is not a clean baseline, and a clean configuration might behave differently.
+
+\paragraph{Assumed cache multipliers.} Dollar figures use assumed cache multipliers, not billing data, so absolute dollars could be off; ratios between configs are more reliable.
+
+\paragraph{Costs cannot be re-derived from the repository.} They were computed from session transcripts, which are not published. Readers can check the method but not reproduce the totals.
+
+\paragraph{Model versions.} The models are specific to November 2026, and the routing table may not hold for later ones.

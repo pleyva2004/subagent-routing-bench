@@ -1,0 +1,25 @@
+\begin{tikzpicture}[
+  node distance=0.75cm and 0.8cm,
+  box/.style={rectangle, rounded corners=4pt, draw=arxivblue, thick, fill=arxivblue!8,
+              font=\small, align=center, text width=2.75cm, minimum height=1.25cm,
+              inner sep=4pt},
+  gbox/.style={box, draw=arxivgray, fill=arxivgray!8},
+  arr/.style={-{Stealth[length=2.2mm]}, thick, arxivgray}
+]
+% first row
+\node[box] (orch) {Orchestrator session};
+\node[box, right=of orch] (launch) {Launch sub-agent in a cmux pane};
+\node[gbox, right=of launch] (tree) {Fresh git worktree in a trusted slot};
+\node[box, right=of tree] (run) {Agent runs (\texttt{dontAsk} mode, allowlist)};
+% second row, right to left
+\node[gbox, below=of run] (collect) {Collect reply from transcript};
+\node[box, left=of collect] (grade) {Grade from the worktree: restore tests, add hidden tests, run suite};
+\node[gbox, left=of grade] (rec) {Results record};
+
+\draw[arr] (orch) -- (launch);
+\draw[arr] (launch) -- (tree);
+\draw[arr] (tree) -- (run);
+\draw[arr] (run) -- (collect);
+\draw[arr] (collect) -- (grade);
+\draw[arr] (grade) -- (rec);
+\end{tikzpicture}

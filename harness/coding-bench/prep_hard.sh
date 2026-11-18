@@ -1,4 +1,5 @@
 #!/bin/bash
+# Commit ids of the private target repo are replaced with COMMIT_* placeholders.
 # Build folders for the hard task writers. Usage: prep_hard.sh <feature commit>...
 set -eu
 R=${BENCH_REPO:-~/.cache/coding-bench/repos/target}  # the target repo clone
@@ -21,8 +22,8 @@ r=[x for x in json.load(open('$HOME/.cache/coding-bench/admission_hard.json')) i
 open('$d/hidden_tests.txt','w').write('\n'.join(r['fail_to_pass'])+'\n')"
   [ -d "$d/base" ] || { git -C "$R" worktree add -q --detach "$d/base" "$c^"; }
 done
-for k in hidden-far two-bugs misleading; do mkdir -p "$B/fix-$k"; wt "$B/fix-$k/wt" 60913d6; done
-for c in 58f2bbe 4dd880a; do
+for k in hidden-far two-bugs misleading; do mkdir -p "$B/fix-$k"; wt "$B/fix-$k/wt" COMMIT_HEAD; done
+for c in COMMIT_R4 COMMIT_R5; do
   d="$B/review-$c"; mkdir -p "$d"
   git -C "$R" log -1 --format='%B' "$c" > "$d/commit_message.txt"
   git -C "$R" show --format= "$c" -- src > "$d/original.diff"

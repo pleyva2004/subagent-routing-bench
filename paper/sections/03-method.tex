@@ -1,0 +1,191 @@
+\section{Method}
+\label{sec:method}
+
+\subsection{Sub-agent harness}
+\label{sec:harness}
+
+An orchestrating Claude Code session launches each sub-agent as its own
+interactive Claude Code session in a cmux terminal pane, through a small
+helper script. A \texttt{launch} call prints a handle; a \texttt{collect}
+call waits for the reply and closes the pane. The first agent opens one
+column beside the orchestrator and later agents stack inside it. Each
+session gets a fixed session ID, and we read the reply from the last
+turn-end entry of the session transcript rather than from the screen, so
+long replies come back whole. The prompt reaches the pane through a
+temporary file, because cmux drops typed input beyond about 1,024
+characters. For this study we added options for the start folder, the
+permission mode (the helper refuses \texttt{bypassPermissions}) and a
+settings file holding allow and deny rules.
+
+Figure~\ref{fig:pipeline} shows one coding run. Each run gets a fresh
+git worktree of the target repository at the task's base commit, with
+dependencies synced, in one of eight reusable slot folders, so up to eight
+runs proceed at once. Agents run in \texttt{dontAsk} permission mode with
+an allowlist: running tests, read-only git, search commands, and file
+edits inside the slot folders. Commits, pushes, branch switches, resets,
+stashes, sub-agents and web access are denied. A call outside the
+allowlist is denied without stopping the run. Claude Code asks whether to
+trust any new folder and does not inherit trust from parent folders;
+accepting the prompt inside a worktree saves trust on the main repository,
+which then covers every worktree of it. The user accepted it once by hand.
+Agents loaded the user's global Claude Code instructions, as they would in
+ordinary use. Grading happens after the agent exits (Section~\ref{sec:grading}).
+
+\begin{figure}[H]
+\centering
+\input{figures/pipeline}
+\caption{One coding run. The orchestrator launches the sub-agent in a
+cmux pane inside a fresh worktree. After the agent exits, the reply is
+read from the transcript and the run is graded from the worktree, not
+from the reply.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Models and configurations}
+\label{sec:configs}
+
+We test Claude Haiku~5.5 and Claude Sonnet~5.5 (hereafter Haiku and
+Sonnet) at five effort levels: \texttt{low}, \texttt{medium},
+\texttt{high}, \texttt{xhigh} and \texttt{max}. We call one model at one
+effort level a \emph{config}. No Opus sub-agents were used. Not every
+config ran in every experiment (Table~\ref{tab:configs}). The study ran on
+November 16--17, 2026.
+
+\begin{table}[H]
+\centering
+\caption{Experiments, configs and trials per cell.}
+\label{tab:configs}
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{L{4.6cm} L{6.4cm} L{2.6cm}}
+\toprule
+\textbf{Experiment} & \textbf{Configs} & \textbf{Trials per cell} \\
+\midrule
+1. Reasoning without tools & Both models at \texttt{low} to \texttt{xhigh} (8) & 1 \\
+2. Coding, easy set & Both models at all five levels (10) & 1 \\
+3. Coding, hard set & Haiku \texttt{low}; Sonnet \texttt{low}, \texttt{medium}, \texttt{high}, \texttt{xhigh} (5) & 3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tasks}
+\label{sec:tasks}
+
+Experiment~1 uses three reasoning families with exact answers and ten
+difficulty levels each. Tools were forbidden, and we checked every
+transcript: only thinking and text blocks appeared. Levels 6--10 ran as
+per-family chains that stopped after two consecutive failures, counting a
+failure at level 5; so Haiku \texttt{low}'s trace levels above 250
+statements were never run.
+
+The coding target is a private Python project of about 150 files (an agent
+runtime with a daemon, several transports, model adapters, tools and a
+SQLite store), with a suite of about 140 tests that runs in about 12
+seconds. Its code is not published, and we describe its components only
+generically. Experiments~2 and~3 use 22 tasks of four kinds, 12 in the easy
+set and 10 in the hard set (Table~\ref{tab:task-sets}). Feature tasks
+replay real commits in the manner of SWE-bench~\cite{jimenez2024swebench}:
+the agent starts at the commit's parent, receives a written ticket (the
+brief), and is graded by the commit's own tests. The two terse hard-set
+features reuse two easy-set commits with much shorter briefs.
+
+\begin{table}[H]
+\centering
+\caption{Task kinds and reasoning families. Coding counts are easy set plus hard set.}
+\label{tab:task-sets}
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{L{2.5cm} L{1.5cm} L{9.5cm}}
+\toprule
+\textbf{Kind} & \textbf{Count} & \textbf{What makes it hard} \\
+\midrule
+Locate & 3 & Same-named decoys; a search across Python and HTML \\
+Fix & 2 + 3 & A bug two layers below its symptom; hidden tests far from the cause; two causes behind one symptom with only one visible failing test; a bug report that blames the wrong component \\
+Feature & 4 + 5 & Real commits from 1 to 15 files and 25 to 602 lines added (up to 32 hidden tests); terse briefs of 70 and 115 words \\
+Review & 3 + 2 & Real diffs with 0 to 3 planted bugs; the subtle ones (missing awaits, error handling, edge cases) pass the existing tests \\
+\midrule
+Multiplication & 10 levels & Exact long arithmetic; two numbers of 4 to 40 digits each \\
+Code trace & 10 levels & Mentally running generated Python over 4 variables, 10 to 1,300 statements \\
+Seating logic & 10 levels & A minimal clue set with exactly one solution; 4 to 13 people \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Task construction and validation}
+\label{sec:validation}
+
+A feature task is admitted only if the commit's new tests fail before the
+change and pass after it, and every other test passes both times. Sonnet
+\texttt{high} sub-agents wrote the briefs, planted bugs, bug reports and
+review answer keys. Planting a known fault in otherwise working code and
+checking that the checks catch it follows the logic of mutation
+testing~\cite{demillo1978hints}; here the checks are the visible tests for
+fixes and the reviewing agent for reviews.
+
+Because the writer also knows the answer, we verified each brief
+adversarially. A Sonnet \texttt{xhigh} verifier read each brief line by
+line against the hidden tests and fixed what it found. In the easy set, 2
+of 4 briefs passed unchanged and 2 leaked internal helper names, which we
+removed. In the hard set, 3 of 5 passed unchanged; one gained 2 missing
+interface details and one gained 4, including a return type that a test
+asserts.
+
+We rejected and rebuilt one hard task, because its writer had re-planted
+the easy set's bug and named the buggy function in the report.
+
+Finally, an oracle self-test ran on all 22 tasks: the known-correct answer
+must pass and doing nothing must fail. It caught one bad task, a feature
+whose commit also added a dependency, so the agent's environment could not
+run the new tests. The fix is that feature tasks now start with the
+commit's dependency changes applied; we applied it before any run of the
+two affected feature tasks. No person reviewed the answer keys; validity
+rests on the oracle self-test and on spot reads by the orchestrating model.
+
+\subsection{Grading}
+\label{sec:grading}
+
+Grading runs after the agent exits, from the worktree, not from the
+agent's reply.
+
+\begin{itemize}
+  \item \textbf{Fix and feature.} Restore the original tests, add the
+        hidden tests, and run the full suite, excluding two test files that
+        need live network services. A run passes only with no failures and
+        every hidden must-pass test passing.
+  \item \textbf{Locate.} The reply must list exactly the expected set of
+        \texttt{file:line} locations.
+  \item \textbf{Review.} A planted bug counts as found if the reply cites
+        its file within 3 lines. Extra reports on a diff with planted bugs
+        are recorded but do not fail the run; a clean diff must come back
+        with no reports. We adopted this rule after the pilot, because most
+        pilot ``false alarms'' were real defects already present in the
+        original commits, and regraded the pilot from saved replies.
+  \item \textbf{Reasoning.} Exact match to the known answer.
+\end{itemize}
+
+For each run we record status, tokens by type, tool calls, denied tool
+calls, agent time, and whether the agent claimed that the tests passed.
+Runs that failed for harness reasons were rerun; the original row stays in
+the data, marked superseded, and the rerun is counted.
+
+\subsection{Cost accounting}
+\label{sec:cost-accounting}
+
+Dollars are API-equivalent: what the tokens would cost at first-party API
+prices of November 2026, not subscription usage and not billing data. We
+compute them per request from each session transcript, from token counts by
+type. Sonnet costs \$2.00 per million input tokens, \$10.00 per million
+output tokens and \$0.10 per million cache-read tokens. Haiku costs
+\$0.10 input and \$0.50 output per million tokens for prompts up to 100K
+tokens, and \$0.50 and \$2.50 beyond that; we apply this tier per request.
+
+Two prices are assumptions rather than listed rates: cache writes at
+1.25$\times$ the input rate, and Haiku cache reads at 0.1$\times$ its
+input rate. A different multiplier would shift every dollar figure, so
+ratios between configs are more reliable than absolute dollars. The
+transcripts are not published, so the totals cannot be re-derived from the
+repository alone; the method is documented in \texttt{analysis/cost\_model.py}.
+We report dollars per success, meaning a config's total dollars
+divided by its passed tasks.

@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pablo Leyva" />
+  <title>Routing Claude Code Sub-Agents by Model and Effort: A Case Study</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for citations */
+    div.csl-bib-body { }
+    div.csl-entry {
+      clear: both;
+    }
+    .hanging-indent div.csl-entry {
+      margin-left:2em;
+      text-indent:-2em;
+    }
+    div.csl-left-margin {
+      min-width:2em;
+      float:left;
+    }
+    div.csl-right-inline {
+      margin-left:2em;
+      padding-left:1em;
+    }
+    div.csl-indent {
+      margin-left: 2em;
+    }  </style>
+  <link rel="stylesheet" href="assets/paper.css" />
+</head>
+<body>
+<nav class="paper-nav"><a href="paper.pdf">PDF</a> &middot; <a href="https://github.com/pleyva2004/subagent-routing-bench">Code and data</a></nav>
+<header id="title-block-header">
+<h1 class="title">Routing Claude Code Sub-Agents by Model and Effort: A
+Case Study</h1>
+<p class="author">Pablo Leyva</p>
+<div class="abstract">
+<div class="abstract-title">Abstract</div>
+<p>An orchestrating agent often delegates work to cheaper sub-agents and
+must choose a model and a reasoning effort level for each, which
+together drive cost, wall-clock time, and answer quality. We measure how
+much these choices matter for Claude Haiku 5.5 and Claude Sonnet 5.5 run
+as Claude Code sub-agents in terminal panes. Three experiments covered
+229 tool-free reasoning runs, 120 coding runs on an easy set of 12
+tasks, and 150 coding runs on a hard set of 10 tasks, all built from a
+private Python repository, with API-equivalent costs computed from
+session transcripts. Haiku <code>low</code> passed all 30 fix and
+feature runs across both sets (Wilson 95 % interval 89–100 %), at $0.041
+per success over all hard-set tasks, reviews included, against $0.207
+for Sonnet <code>low</code>. Effort above <code>medium</code> added cost
+with no accuracy gain we could detect, though nearly every task passed
+at every configuration: Sonnet <code>xhigh</code> cost 2.2 to 2.6 times
+Sonnet <code>low</code> per success. Model and effort did matter for
+long exact reasoning without tools: Sonnet <code>xhigh</code> alone
+traced 1,300 statements without failure, while Haiku <code>high</code>
+and <code>xhigh</code> took a wrong shortcut at 40. We hypothesize that
+code-review misses are shared within a model more than across models;
+this rests on a handful of cases, with exceptions in both directions. We
+route lookups and code changes to Haiku <code>low</code>, review to both
+models in parallel, and long tool-free reasoning to Sonnet
+<code>xhigh</code>. The main caveat is a ceiling effect: nearly every
+coding task passed at every configuration, so we did not find where
+coding reliability breaks down.</p>
+</div>
+</header>
+<h1 data-number="1" id="sec:introduction"><span
+class="header-section-number">1</span> Introduction</h1>
+<p>Coding agents increasingly work as orchestrators. A top-level session
+decomposes a request, hands independent pieces to sub-agents, and merges
+what comes back. Each hand-off forces a choice: which model should run
+the sub-agent, and at what reasoning effort? These two settings
+determine what a delegated slice costs, how long the orchestrator waits,
+and whether the returned answer can be trusted. A cheap setting that
+fails wastes a round trip. An expensive setting that was not needed
+wastes money and time on every slice.</p>
+<p>In practice, we expect the choice is often made by habit or by a rule
+of thumb; a common one is to use the largest model for anything
+difficult and the smallest for lookups. Effort levels add a second axis
+with little guidance. Higher effort means more thinking tokens, and one
+might expect it to help on harder work, but it also raises cost and
+latency, and it is not obvious that it helps on the tasks sub-agents are
+actually given. We could not find measurements that let an orchestrator
+pick a model and effort for a given slice of work.</p>
+<p>We study this question directly. We run Claude Haiku 5.5 and Claude
+Sonnet 5.5 as sub-agents at up to five effort levels, <code>low</code>,
+<code>medium</code>, <code>high</code>, <code>xhigh</code>, and
+<code>max</code>. We call one model at one effort level a
+<em>config</em>. Each sub-agent runs as a separate Claude Code session
+in its own terminal pane, so the setting resembles real orchestration
+rather than a bare API call. We use three experiments. The first asks
+agents to reason exactly, without tools, over families of tasks whose
+difficulty we can scale. The second and third give agents coding tasks
+in a private Python repository: locating code, fixing planted bugs,
+replaying real feature commits, and reviewing diffs with planted bugs.
+Fix and feature tasks are graded by running tests after the agent exits,
+not by trusting the agent’s own report. For every run we compute the
+API-equivalent cost from the session transcript, so we can compare
+configs by dollars per successful task as well as by pass rate.</p>
+<p>The picture that emerges is mixed. On coding, almost every config
+passed almost every task, so effort and model choice separated configs
+mainly through cost and time. On long exact reasoning without tools,
+they separated configs sharply. A few code-review misses repeated across
+every effort level of one model, which suggests that a second model may
+add more coverage than more effort. We say plainly where the evidence is
+thin: the coding tasks were mostly passed by every config, so the study
+does not locate the point where coding reliability breaks down.</p>
+<p><strong>Contributions.</strong></p>
+<ol>
+<li><p>A harness that runs Claude Code sub-agents in terminal panes with
+controlled permissions, fresh worktrees, and post-hoc grading from the
+working tree, together with the validation steps we used to check tasks,
+briefs, and answer keys.</p></li>
+<li><p>Measurements of two models across effort levels on 229 tool-free
+reasoning runs and 270 coding runs, reported as pass rates with Wilson
+intervals and as API-equivalent dollars and agent time per successful
+task.</p></li>
+<li><p>A routing table derived from these measurements, with each rule
+marked as measured, observed in a handful of cases, untested, or a
+judgment, so readers can see how much weight it can bear.</p></li>
+<li><p>An explicit statistical framework for a larger follow-up,
+including an item response model and an error-correlation analysis, and
+a list of the harness and benchmark-design problems we met along the
+way.</p></li>
+</ol>
+<p><strong>Roadmap.</strong> Section 2 reviews related work. Section 3
+describes the harness, the configs, the tasks and their validation, the
+grading rules, and the cost accounting. Section 4 reports the three
+experiments and the cost results. Section 5 turns them into a routing
+table, sets out the modeling framework, discusses a second model as an
+alternative to more effort, and states lessons, ethics, and limitations.
+Section 6 concludes with future work.</p>
+<h1 data-number="2" id="sec:related-work"><span
+class="header-section-number">2</span> Related Work</h1>
+<p><strong>Benchmarks from repository history.</strong> SWE-bench builds
+tasks from real GitHub issues and the pull requests that resolved them,
+and grades a patch by the tests that accompany the fix <span
+class="citation" data-cites="jimenez2024swebench">(<a
+href="#ref-jimenez2024swebench" role="doc-biblioref">Jimenez et al.
+2024</a>)</span>. We borrow the idea of replaying real history: our
+feature tasks start at a commit’s parent, give the agent a written
+ticket, and are graded by that commit’s own tests. We differ in scope
+and purpose. Our tasks come from one private repository, not many public
+ones, and we vary the agent’s model and effort rather than comparing
+systems on a leaderboard. We also add task kinds that history does not
+supply directly, namely locate and review tasks, and we validate each
+task with an oracle self-test.</p>
+<p><strong>Task-difficulty horizons.</strong> Kwa et al. measure the
+length of a task, in human working time, at which a model succeeds half
+the time <span class="citation" data-cites="kwa2025longtasks">(<a
+href="#ref-kwa2025longtasks" role="doc-biblioref"><span
+class="nocase">Kwa et al.</span> 2025</a>)</span>. We use the same shape
+of idea on a smaller scale. Our code-trace family is graded by program
+length in statements, not by human time, and we report the longest
+length each config solved rather than a fitted 50 % horizon, because one
+trial per cell does not support a fit. Our coding tasks have no clean
+size axis, so we cannot estimate a horizon for them at all.</p>
+<p><strong>Measurement models and small-sample intervals.</strong> The
+Rasch model expresses the chance of success as a function of the gap
+between a person’s ability and an item’s difficulty <span
+class="citation" data-cites="rasch1960probabilistic">(<a
+href="#ref-rasch1960probabilistic" role="doc-biblioref">Rasch
+1960</a>)</span>. We propose a version in which a config’s ability
+combines a model term, an effort term, and a model-by-task term, and we
+state what the current data can and cannot estimate; most of it cannot
+yet be fitted because nearly every cell passed. Because our cells hold
+few trials and pass rates sit near 100 %, we report Wilson score
+intervals <span class="citation" data-cites="wilson1927probable">(<a
+href="#ref-wilson1927probable" role="doc-biblioref">Wilson
+1927</a>)</span>, which behave well in that regime. The intervals are
+wide, and we say so wherever a comparison depends on them.</p>
+<p><strong>Planted faults.</strong> Mutation testing plants faults in a
+program to judge how well a test suite detects them <span
+class="citation" data-cites="demillo1978hints">(<a
+href="#ref-demillo1978hints" role="doc-biblioref">DeMillo et al.
+1978</a>)</span>. We plant faults for a different reader: to give an
+agent a fix task with a known cause, or a review task with a known
+answer key. Our fix tasks also place the cause at different distances
+from the symptom, and some hide the test that would catch it. Unlike
+mutants generated by fixed operators, our planted bugs were written by a
+model, so their validity rests on an oracle check and spot reads, not on
+human review.</p>
+<p><strong>Model routing and reasoning effort in agent
+workflows.</strong> Orchestrating agents delegate to sub-agents, and
+users choose a model and an effort level for each. A common rule of
+thumb is a small model for lookups, a larger one for hard problems, and
+high effort when a task seems difficult. We know of no published
+measurement that tests such rules or compares effort against a second
+model at equal cost. The gap we address is concrete. We measure pass
+rate, dollars, and agent time for the same tasks across models and
+effort levels, run the agents in a setting close to real orchestration,
+and turn the results into a routing table whose rules we label by how
+well the evidence supports them.</p>
+<h1 data-number="3" id="sec:method"><span
+class="header-section-number">3</span> Method</h1>
+<h2 data-number="3.1" id="sec:harness"><span
+class="header-section-number">3.1</span> Sub-agent harness</h2>
+<p>An orchestrating Claude Code session launches each sub-agent as its
+own interactive Claude Code session in a cmux terminal pane, through a
+small helper script. A <code>launch</code> call prints a handle; a
+<code>collect</code> call waits for the reply and closes the pane. The
+first agent opens one column beside the orchestrator and later agents
+stack inside it. Each session gets a fixed session ID, and we read the
+reply from the last turn-end entry of the session transcript rather than
+from the screen, so long replies come back whole. The prompt reaches the
+pane through a temporary file, because cmux drops typed input beyond
+about 1,024 characters. For this study we added options for the start
+folder, the permission mode (the helper refuses
+<code>bypassPermissions</code>) and a settings file holding allow and
+deny rules.</p>
+<p>Figure 1 shows one coding run. Each run gets a fresh git worktree of
+the target repository at the task’s base commit, with dependencies
+synced, in one of eight reusable slot folders, so up to eight runs
+proceed at once. Agents run in <code>dontAsk</code> permission mode with
+an allowlist: running tests, read-only git, search commands, and file
+edits inside the slot folders. Commits, pushes, branch switches, resets,
+stashes, sub-agents and web access are denied. A call outside the
+allowlist is denied without stopping the run. Claude Code asks whether
+to trust any new folder and does not inherit trust from parent folders;
+accepting the prompt inside a worktree saves trust on the main
+repository, which then covers every worktree of it. The user accepted it
+once by hand. Agents loaded the user’s global Claude Code instructions,
+as they would in ordinary use. Grading happens after the agent exits
+(Section 3.5).</p>
+<figure id="fig:pipeline" data-latex-placement="H">
+<img src="assets/figures/paper-pipeline.svg" />
+<figcaption><strong>Figure 1:</strong> One coding run. The orchestrator
+launches the sub-agent in a cmux pane inside a fresh worktree. After the
+agent exits, the reply is read from the transcript and the run is graded
+from the worktree, not from the reply.</figcaption>
+</figure>
+<h2 data-number="3.2" id="sec:configs"><span
+class="header-section-number">3.2</span> Models and configurations</h2>
+<p>We test Claude Haiku 5.5 and Claude Sonnet 5.5 (hereafter Haiku and
+Sonnet) at five effort levels: <code>low</code>, <code>medium</code>,
+<code>high</code>, <code>xhigh</code> and <code>max</code>. We call one
+model at one effort level a <em>config</em>. No Opus sub-agents were
+used. Not every config ran in every experiment (Table 1). The study ran
+on November 16–17, 2026.</p>
+<div id="tab:configs">
+<table>
+<caption><strong>Table 1:</strong> Experiments, configs and trials per
+cell.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Experiment</strong></th>
+<th style="text-align: left;"><strong>Configs</strong></th>
+<th style="text-align: left;"><strong>Trials per cell</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">1. Reasoning without tools</td>
+<td style="text-align: left;">Both models at <code>low</code> to
+<code>xhigh</code> (8)</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">2. Coding, easy set</td>
+<td style="text-align: left;">Both models at all five levels (10)</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">3. Coding, hard set</td>
+<td style="text-align: left;">Haiku <code>low</code>; Sonnet
+<code>low</code>, <code>medium</code>, <code>high</code>,
+<code>xhigh</code> (5)</td>
+<td style="text-align: left;">3</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 data-number="3.3" id="sec:tasks"><span
+class="header-section-number">3.3</span> Tasks</h2>
+<p>Experiment 1 uses three reasoning families with exact answers and ten
+difficulty levels each. Tools were forbidden, and we checked every
+transcript: only thinking and text blocks appeared. Levels 6–10 ran as
+per-family chains that stopped after two consecutive failures, counting
+a failure at level 5; so Haiku <code>low</code>’s trace levels above 250
+statements were never run.</p>
+<p>The coding target is a private Python project of about 150 files (an
+agent runtime with a daemon, several transports, model adapters, tools
+and a SQLite store), with a suite of about 140 tests that runs in about
+12 seconds. Its code is not published, and we describe its components
+only generically. Experiments 2 and 3 use 22 tasks of four kinds, 12 in
+the easy set and 10 in the hard set (Table 2). Feature tasks replay real
+commits in the manner of SWE-bench <span class="citation"
+data-cites="jimenez2024swebench">(<a href="#ref-jimenez2024swebench"
+role="doc-biblioref">Jimenez et al. 2024</a>)</span>: the agent starts
+at the commit’s parent, receives a written ticket (the brief), and is
+graded by the commit’s own tests. The two terse hard-set features reuse
+two easy-set commits with much shorter briefs.</p>
+<div id="tab:task-sets">
+<table>
+<caption><strong>Table 2:</strong> Task kinds and reasoning families.
+Coding counts are easy set plus hard set.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Kind</strong></th>
+<th style="text-align: left;"><strong>Count</strong></th>
+<th style="text-align: left;"><strong>What makes it hard</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Locate</td>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">Same-named decoys; a search across Python
+and HTML</td>
+</tr>
+<tr>
+<td style="text-align: left;">Fix</td>
+<td style="text-align: left;">2 + 3</td>
+<td style="text-align: left;">A bug two layers below its symptom; hidden
+tests far from the cause; two causes behind one symptom with only one
+visible failing test; a bug report that blames the wrong component</td>
+</tr>
+<tr>
+<td style="text-align: left;">Feature</td>
+<td style="text-align: left;">4 + 5</td>
+<td style="text-align: left;">Real commits from 1 to 15 files and 25 to
+602 lines added (up to 32 hidden tests); terse briefs of 70 and 115
+words</td>
+</tr>
+<tr>
+<td style="text-align: left;">Review</td>
+<td style="text-align: left;">3 + 2</td>
+<td style="text-align: left;">Real diffs with 0 to 3 planted bugs; the
+subtle ones (missing awaits, error handling, edge cases) pass the
+existing tests</td>
+</tr>
+<tr>
+<td style="text-align: left;">Multiplication</td>
+<td style="text-align: left;">10 levels</td>
+<td style="text-align: left;">Exact long arithmetic; two numbers of 4 to
+40 digits each</td>
+</tr>
+<tr>
+<td style="text-align: left;">Code trace</td>
+<td style="text-align: left;">10 levels</td>
+<td style="text-align: left;">Mentally running generated Python over 4
+variables, 10 to 1,300 statements</td>
+</tr>
+<tr>
+<td style="text-align: left;">Seating logic</td>
+<td style="text-align: left;">10 levels</td>
+<td style="text-align: left;">A minimal clue set with exactly one
+solution; 4 to 13 people</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 data-number="3.4" id="sec:validation"><span
+class="header-section-number">3.4</span> Task construction and
+validation</h2>
+<p>A feature task is admitted only if the commit’s new tests fail before
+the change and pass after it, and every other test passes both times.
+Sonnet <code>high</code> sub-agents wrote the briefs, planted bugs, bug
+reports and review answer keys. Planting a known fault in otherwise
+working code and checking that the checks catch it follows the logic of
+mutation testing <span class="citation"
+data-cites="demillo1978hints">(<a href="#ref-demillo1978hints"
+role="doc-biblioref">DeMillo et al. 1978</a>)</span>; here the checks
+are the visible tests for fixes and the reviewing agent for reviews.</p>
+<p>Because the writer also knows the answer, we verified each brief
+adversarially. A Sonnet <code>xhigh</code> verifier read each brief line
+by line against the hidden tests and fixed what it found. In the easy
+set, 2 of 4 briefs passed unchanged and 2 leaked internal helper names,
+which we removed. In the hard set, 3 of 5 passed unchanged; one gained 2
+missing interface details and one gained 4, including a return type that
+a test asserts.</p>
+<p>We rejected and rebuilt one hard task, because its writer had
+re-planted the easy set’s bug and named the buggy function in the
+report.</p>
+<p>Finally, an oracle self-test ran on all 22 tasks: the known-correct
+answer must pass and doing nothing must fail. It caught one bad task, a
+feature whose commit also added a dependency, so the agent’s environment
+could not run the new tests. The fix is that feature tasks now start
+with the commit’s dependency changes applied; we applied it before any
+run of the two affected feature tasks. No person reviewed the answer
+keys; validity rests on the oracle self-test and on spot reads by the
+orchestrating model.</p>
+<h2 data-number="3.5" id="sec:grading"><span
+class="header-section-number">3.5</span> Grading</h2>
+<p>Grading runs after the agent exits, from the worktree, not from the
+agent’s reply.</p>
+<ul>
+<li><p><strong>Fix and feature.</strong> Restore the original tests, add
+the hidden tests, and run the full suite, excluding two test files that
+need live network services. A run passes only with no failures and every
+hidden must-pass test passing.</p></li>
+<li><p><strong>Locate.</strong> The reply must list exactly the expected
+set of <code>file:line</code> locations.</p></li>
+<li><p><strong>Review.</strong> A planted bug counts as found if the
+reply cites its file within 3 lines. Extra reports on a diff with
+planted bugs are recorded but do not fail the run; a clean diff must
+come back with no reports. We adopted this rule after the pilot, because
+most pilot “false alarms” were real defects already present in the
+original commits, and regraded the pilot from saved replies.</p></li>
+<li><p><strong>Reasoning.</strong> Exact match to the known
+answer.</p></li>
+</ul>
+<p>For each run we record status, tokens by type, tool calls, denied
+tool calls, agent time, and whether the agent claimed that the tests
+passed. Runs that failed for harness reasons were rerun; the original
+row stays in the data, marked superseded, and the rerun is counted.</p>
+<h2 data-number="3.6" id="sec:cost-accounting"><span
+class="header-section-number">3.6</span> Cost accounting</h2>
+<p>Dollars are API-equivalent: what the tokens would cost at first-party
+API prices of November 2026, not subscription usage and not billing
+data. We compute them per request from each session transcript, from
+token counts by type. Sonnet costs $2.00 per million input tokens,
+$10.00 per million output tokens and $0.10 per million cache-read
+tokens. Haiku costs $0.10 input and $0.50 output per million tokens for
+prompts up to 100K tokens, and $0.50 and $2.50 beyond that; we apply
+this tier per request.</p>
+<p>Two prices are assumptions rather than listed rates: cache writes at
+1.25<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+the input rate, and Haiku cache reads at
+0.1<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+its input rate. A different multiplier would shift every dollar figure,
+so ratios between configs are more reliable than absolute dollars. The
+transcripts are not published, so the totals cannot be re-derived from
+the repository alone; the method is documented in
+<code>analysis/cost_model.py</code>. We report dollars per success,
+meaning a config’s total dollars divided by its passed tasks.</p>
+<h1 data-number="4" id="sec:experiments"><span
+class="header-section-number">4</span> Experiments</h1>
+<h2 data-number="4.1" id="sec:exp-setup"><span
+class="header-section-number">4.1</span> Setup</h2>
+<p>All runs took place on November 16–17, 2026, with Claude Haiku 5.5
+(Haiku) and Claude Sonnet 5.5 (Sonnet) as sub-agents; no Opus sub-agents
+were used. A configuration is one model at one effort level.
+Experiment 1 isolates unaided reasoning: the agent has no tools and
+cannot run code or check itself. Experiments 2 and 3 give the agent
+tools, tests and a working copy of a repository. Experiment 2 sweeps all
+ten configurations over twelve easy tasks, one trial per cell.
+Experiment 3 narrows to five configurations (Haiku <code>low</code>;
+Sonnet <code>low</code>, <code>medium</code>, <code>high</code>,
+<code>xhigh</code>) and ten harder tasks with three trials per cell,
+because the easy set barely separated configurations.</p>
+<p>Experiment 1 comprised 229 runs and 1.71 million output tokens, in
+two stages. Experiment 2 comprised 120 runs. Experiment 3 comprised 150
+runs and finished in 27 minutes on eight parallel slots. Dollar figures
+are API-equivalent (Section 3.6).</p>
+<h2 data-number="4.2" id="sec:exp-reasoning"><span
+class="header-section-number">4.2</span> Reasoning without tools</h2>
+<p>Each of three families (long multiplication, tracing generated
+Python, and a seating puzzle with a unique solution) has ten difficulty
+levels. We ran eight configurations (both models at <code>low</code>,
+<code>medium</code>, <code>high</code> and <code>xhigh</code>), one
+trial per cell, with tools forbidden and every transcript checked to
+contain only thinking and text. Levels 6–10 ran as chains that stopped
+after two consecutive failures, counting a failure at level 5, so
+“longest solved at all” means the longest level reached before a chain
+stopped; Haiku <code>low</code>’s trace levels above 250 statements were
+never run.</p>
+<p><strong>Results by family.</strong> Seating logic gave no signal:
+every configuration solved every level, up to 13 people. In
+multiplication, every configuration solved up to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>40</mn><mo>×</mo><mn>40</mn></mrow><annotation encoding="application/x-tex">40 \times 40</annotation></semantics></math>
+digits except Haiku <code>low</code>, which first failed at 25 digits,
+and Haiku <code>medium</code>, which first failed at 32. Both wrong
+answers had the right length and were correct except for one span of 8
+to 10 digits, which held the right digits in the wrong order. Both
+configurations then solved the 40-digit problem, so these were not clean
+ceilings. Code tracing separated the configurations (Table 3 and
+Figure 2). Sonnet <code>xhigh</code> never failed. Sonnet
+<code>low</code> and <code>medium</code> reached 400 statements before
+failing. Haiku <code>high</code> and <code>xhigh</code> failed at 40
+statements, earlier than Haiku <code>low</code> or <code>medium</code>,
+so effort did not help Haiku monotonically.</p>
+<div id="tab:trace">
+<table>
+<caption><strong>Table 3:</strong> Code trace: longest program (in
+statements) solved before the first failure and at all, per
+configuration. “1,300+” means the top level was solved with no
+failure.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Config</strong></th>
+<th style="text-align: right;"><strong>Before first
+failure</strong></th>
+<th style="text-align: right;"><strong>At all</strong></th>
+<th style="text-align: left;"><strong>Notes</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Haiku <code>low</code></td>
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">80</td>
+<td style="text-align: left;">Failed 160 and 250</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>medium</code></td>
+<td style="text-align: right;">250</td>
+<td style="text-align: right;">250</td>
+<td style="text-align: left;">Failed 400 and 600</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>high</code></td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">250</td>
+<td style="text-align: left;">Failed 40, 400, 600</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>xhigh</code></td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">400</td>
+<td style="text-align: left;">Failed 40 and 600; declined 900</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>low</code></td>
+<td style="text-align: right;">400</td>
+<td style="text-align: right;">400</td>
+<td style="text-align: left;">Failed 600 and 900</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>medium</code></td>
+<td style="text-align: right;">400</td>
+<td style="text-align: right;">400</td>
+<td style="text-align: left;">Failed 600 and 900</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>high</code></td>
+<td style="text-align: right;">400</td>
+<td style="text-align: right;">900</td>
+<td style="text-align: left;">Failed 600, solved 900, failed 1,300</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>xhigh</code></td>
+<td style="text-align: right;">1,300+</td>
+<td style="text-align: right;">1,300</td>
+<td style="text-align: left;">Never failed</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure id="fig:reasoning-trace" data-latex-placement="H">
+<img src="assets/figures/paper-reasoning-trace.svg" />
+<figcaption><strong>Figure 2:</strong> Longest code trace solved before
+the first failure and at all, per configuration. Values are statement
+counts.</figcaption>
+</figure>
+<p><strong>The swap shortcut.</strong> At 40 statements, Haiku
+<code>high</code> and <code>xhigh</code> gave the same wrong answer. The
+program contains three swaps of one pair of variables followed by one
+swap of a different pair; both configurations treated this as “four
+swaps that cancel out.” Haiku <code>low</code> and <code>medium</code>
+traced each line and were correct. The shared wrong answer is consistent
+with a shared habit of the model, but one pair of configurations at one
+level cannot rule out chance. With one trial per cell we also cannot say
+whether longer thinking causes the shortcut.</p>
+<p><strong>An unexplained answer.</strong> At 600 statements, Sonnet
+<code>low</code> and <code>medium</code> gave the same wrong answer. To
+check, we replayed the program with each single statement skipped, its
+branch flipped, or its swap applied in sequence, using a script in the
+repository; none reproduces it, and the cause is unknown. By contrast,
+Haiku <code>high</code>’s wrong answer at 600 is reproduced exactly by
+skipping one statement.</p>
+<p><strong>A declined answer.</strong> At 900 statements, Haiku
+<code>xhigh</code> noticed it had re-traced a block it had already done
+and declined to answer. Every other failure was a definite wrong answer.
+An orchestrator can catch a refusal more easily than a confident error,
+but it still used 216k output tokens and 680 s.</p>
+<p><strong>What effort cost.</strong> On the 400-statement trace, Sonnet
+<code>low</code>, <code>medium</code> and <code>high</code> used 8–9k
+output tokens in 43–46 s. Sonnet <code>xhigh</code> used 28k in 131 s,
+and Haiku <code>xhigh</code> used 70k in 214 s. The 1,300-statement run
+by Sonnet <code>xhigh</code> used 95k output tokens and 439 s.</p>
+<h2 data-number="4.3" id="sec:exp-easy"><span
+class="header-section-number">4.3</span> Coding: easy set</h2>
+<p>The easy set has twelve tasks (three locate, two fix, four feature,
+three review), run at all ten configurations: 120 runs, with Sonnet
+<code>high</code> and Haiku <code>medium</code> run first as a pilot.
+After one harness-caused rerun (Haiku <code>high</code>, locate-2),
+every configuration passed every locate, fix and feature task. The
+original row is kept, marked superseded.</p>
+<p><strong>The separating review.</strong> Only the two-bug review
+separated configurations. Every Haiku level, <code>low</code> through
+<code>max</code>, and Sonnet <code>xhigh</code> missed the planted
+shutdown-loop bug, each reporting a real, pre-existing flaw nearby
+instead. Sonnet <code>low</code>, <code>medium</code>, <code>high</code>
+and <code>max</code> found both bugs. Totals were therefore 12/12 for
+those four Sonnet configurations and 11/12 for Sonnet <code>xhigh</code>
+and every Haiku level.</p>
+<p><strong>The review-grading change.</strong> Many pilot “false alarms”
+were real defects already in the original commits (a rendering gap and a
+shutdown-status bug), so extra reports no longer fail a run and the
+review score measures recall on planted bugs, not precision
+(Section 3.5).</p>
+<div id="tab:easy-cost">
+<table>
+<caption><strong>Table 4:</strong> Easy set: dollars per successful
+task, output tokens over the twelve tasks, and agent seconds per
+run.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Config</strong></th>
+<th style="text-align: right;"><strong>$ per success</strong></th>
+<th style="text-align: right;"><strong>Output tokens</strong></th>
+<th style="text-align: right;"><strong>Agent s per run</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Haiku <code>low</code></td>
+<td style="text-align: right;">0.017</td>
+<td style="text-align: right;">66k</td>
+<td style="text-align: right;">34</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>medium</code></td>
+<td style="text-align: right;">0.025</td>
+<td style="text-align: right;">95k</td>
+<td style="text-align: right;">48</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>high</code></td>
+<td style="text-align: right;">0.040</td>
+<td style="text-align: right;">154k</td>
+<td style="text-align: right;">68</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>xhigh</code></td>
+<td style="text-align: right;">0.092</td>
+<td style="text-align: right;">324k</td>
+<td style="text-align: right;">130</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku <code>max</code></td>
+<td style="text-align: right;">0.339</td>
+<td style="text-align: right;">910k</td>
+<td style="text-align: right;">332</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>low</code></td>
+<td style="text-align: right;">0.118</td>
+<td style="text-align: right;">27k</td>
+<td style="text-align: right;">35</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>medium</code></td>
+<td style="text-align: right;">0.116</td>
+<td style="text-align: right;">30k</td>
+<td style="text-align: right;">24</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>high</code></td>
+<td style="text-align: right;">0.164</td>
+<td style="text-align: right;">45k</td>
+<td style="text-align: right;">34</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>xhigh</code></td>
+<td style="text-align: right;">0.258</td>
+<td style="text-align: right;">91k</td>
+<td style="text-align: right;">64</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>max</code></td>
+<td style="text-align: right;">0.895</td>
+<td style="text-align: right;">549k</td>
+<td style="text-align: right;">327</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure id="fig:easy-cost" data-latex-placement="H">
+<img src="assets/figures/paper-easy-cost.svg" />
+<figcaption><strong>Figure 3:</strong> Easy set: dollars per successful
+task by configuration.</figcaption>
+</figure>
+<p>Table 4 and Figure 3 give cost. Haiku <code>low</code> was cheapest
+and passed as many tasks as every other Haiku level; <code>max</code>
+was the most expensive at both models and bought nothing here. No agent
+made a false “tests pass” claim, but no fix or feature failed, so that
+check was untested.</p>
+<h2 data-number="4.4" id="sec:exp-hard"><span
+class="header-section-number">4.4</span> Coding: hard set</h2>
+<p>The hard set separates symptom, cause and test, or says little in the
+brief. The three fixes differ: one has a hidden, distant cause (the five
+tests that catch it are hidden, in four files); one has two bugs behind
+one symptom, with only one visible failing test; one has a bug report
+that blames the wrong component. Three features are large commit replays
+(up to 15 files, 602 lines and 32 hidden tests); two are easy-set
+features briefed in 70 and 115 words. Two reviews contain two and three
+deliberately planted faults that the existing tests do not catch. Each
+configuration ran 30 runs (10 tasks, 3 trials).</p>
+<div id="tab:hard-results">
+<table>
+<caption><strong>Table 5:</strong> Hard set results per configuration
+(30 runs each). “Set aside” excludes the ambiguous review bug described
+in the text.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Config</strong></th>
+<th style="text-align: right;"><strong>As graded</strong></th>
+<th style="text-align: right;"><strong>Set aside</strong></th>
+<th style="text-align: right;"><strong>Code changes</strong></th>
+<th style="text-align: right;"><strong>$/success</strong></th>
+<th style="text-align: right;"><strong>Out. tokens</strong></th>
+<th style="text-align: right;"><strong>Agent s/run</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Haiku <code>low</code></td>
+<td style="text-align: right;">29/30</td>
+<td style="text-align: right;">30/30</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.041</td>
+<td style="text-align: right;">427k</td>
+<td style="text-align: right;">78</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>low</code></td>
+<td style="text-align: right;">26/30</td>
+<td style="text-align: right;">29/30</td>
+<td style="text-align: right;">23/24</td>
+<td style="text-align: right;">0.207</td>
+<td style="text-align: right;">168k</td>
+<td style="text-align: right;">36</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>medium</code></td>
+<td style="text-align: right;">27/30</td>
+<td style="text-align: right;">29/30</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.210</td>
+<td style="text-align: right;">194k</td>
+<td style="text-align: right;">43</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>high</code></td>
+<td style="text-align: right;">27/30</td>
+<td style="text-align: right;">30/30</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.259</td>
+<td style="text-align: right;">244k</td>
+<td style="text-align: right;">58</td>
+</tr>
+<tr>
+<td style="text-align: left;">Sonnet <code>xhigh</code></td>
+<td style="text-align: right;">27/30</td>
+<td style="text-align: right;">30/30</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.532</td>
+<td style="text-align: right;">606k</td>
+<td style="text-align: right;">145</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure id="fig:hard-pass" data-latex-placement="H">
+<img src="assets/figures/paper-hard-pass.svg" />
+<figcaption><strong>Figure 4:</strong> Hard set pass rates as graded,
+with Wilson 95 % intervals.</figcaption>
+</figure>
+<p>Table 5 and Figure 4 summarize results. Every configuration solved
+all three fixes, both terse features and the 4- and 9-file features in
+all three trials. The Wilson intervals <span class="citation"
+data-cites="wilson1927probable">(<a href="#ref-wilson1927probable"
+role="doc-biblioref">Wilson 1927</a>)</span> overlap (29/30 is 83–99 %,
+26/30 is 70–95 %), so as-graded gaps are weak evidence.</p>
+<p><strong>The 602-line feature.</strong> Sonnet <code>low</code> failed
+it once, with seven failing tests. No other configuration failed a code
+change in any trial.</p>
+<p><strong>The ambiguous handler.</strong> In the three-bug review, no
+Sonnet run at any effort level flagged the third planted bug: an error
+handler broadened to catch every exception, which turns parsing errors
+and code bugs into a quiet error instead of a crash. This is arguably a
+robustness choice rather than a defect, and the prompt asked only for
+real runtime defects. The answer key was written by a Sonnet sub-agent,
+not a person. We therefore count the runs both ways: as graded, and with
+this bug set aside. Eleven Sonnet runs found the other two bugs; one
+Sonnet <code>medium</code> run found only one, which counts against it
+under both views. Haiku <code>low</code> flagged the third bug in two of
+three runs. Three trials cannot show that Haiku is better at it.</p>
+<p><strong>False success claims and denials.</strong> No false success
+claim was confirmed. The one flagged run was a harness anomaly (below),
+and the one real failure on a fix or feature did not claim success. The
+hard set recorded 189 denied tool calls: 154 chained commands
+(<code>;</code>, <code>||</code>, pipes, loops) that an allowlist cannot
+match, 15 other <code>uv</code> subcommands, 15 <code>sed -i</code>, and
+5 others. (An earlier count of 234 double-counted results that
+transcripts repeat.) Agents retried with simpler commands or the edit
+tool, and no failure traced to a denial.</p>
+<p><strong>Harness problems.</strong> We found and fixed three. First,
+in one Sonnet <code>high</code> run of the 602-line feature, a hidden
+test file was never collected during grading, so the run was graded a
+failure and flagged as a false claim. The grader now treats a hidden
+test file with no results as a harness error and retries. A fresh sample
+passed; the original row is kept, marked superseded. Second, saved diffs
+omitted new files, so that run could not be replayed; they now include
+them. Third, the claim parser read an earlier baseline count instead of
+the final run’s; it now uses the largest pytest-style count in the
+reply.</p>
+<h2 data-number="4.5" id="sec:exp-cost"><span
+class="header-section-number">4.5</span> Cost</h2>
+<p>Dollars per success rose with effort above <code>medium</code> on
+both sets (Tables 4 and 5); Sonnet <code>medium</code> was slightly
+cheaper than Sonnet <code>low</code> on the easy set. Haiku
+<code>low</code> cost $0.017 on the easy set and $0.041 on the hard set;
+Sonnet <code>low</code> cost $0.118 and $0.207.</p>
+<p><strong>Haiku’s price against its tokens and time.</strong> Haiku
+costs about 1/20 as much per token as Sonnet but writes more and runs
+longer. Against Sonnet <code>low</code> on the hard set it used about
+2.5 times the output tokens and about twice the agent time, and still
+cost about one fifth as much per success. The price is wall-clock:
+Sonnet <code>medium</code> took 43 s per hard-set run and 24 s per
+easy-set run, against 78 s and 34 s for Haiku <code>low</code>.</p>
+<p><strong>Effort above medium.</strong> Sonnet <code>xhigh</code> cost
+about 2.2 times Sonnet <code>low</code> per success on the easy set and
+2.6 times on the hard set. On the easy set, <code>max</code> cost about
+8 times <code>low</code> for Sonnet and about 19 times for Haiku. Pass
+counts did not improve: Sonnet <code>xhigh</code> scored 11/12 on the
+easy set, one below Sonnet <code>low</code>. Figure 5 plots the easy-set
+curve, and Figure 6 plots dollars against agent time on the hard set.
+Because nearly every task passed at every configuration, the absence of
+an effort benefit may be a ceiling effect. The coding runs cost about
+$24 (easy set) and $34 (hard set).</p>
+<figure id="fig:effort-cost" data-latex-placement="H">
+<img src="assets/figures/paper-effort-cost.svg" />
+<figcaption><strong>Figure 5:</strong> Easy set: dollars per success
+against effort level, one line per model.</figcaption>
+</figure>
+<figure id="fig:hard-cost-time" data-latex-placement="H">
+<img src="assets/figures/paper-hard-cost-time.svg" />
+<figcaption><strong>Figure 6:</strong> Hard set: dollars per success
+against agent seconds per run.</figcaption>
+</figure>
+<h1 data-number="5" id="sec:discussion"><span
+class="header-section-number">5</span> Discussion</h1>
+<h2 data-number="5.1" id="sec:routing"><span
+class="header-section-number">5.1</span> Routing recommendations</h2>
+<p>We rewrote the routing table of our sub-agent launcher from these
+results. Table 6 lists each slice of work, the configuration we now use,
+the evidence behind it, and how strong that evidence is. The last column
+matters most: only some rows were measured.</p>
+<div id="tab:routing">
+<table>
+<caption><strong>Table 6:</strong> Routing table adopted, with the basis
+of each row.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Slice</strong></th>
+<th style="text-align: left;"><strong>Model and effort</strong></th>
+<th style="text-align: left;"><strong>Evidence</strong></th>
+<th style="text-align: left;"><strong>Basis</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Lookups</td>
+<td style="text-align: left;">Haiku <code>low</code></td>
+<td style="text-align: left;">Every config passed every locate task;
+Haiku <code>low</code> was cheapest.</td>
+<td style="text-align: left;">Measured (3 tasks, one trial each)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Code changes (fixes, features up to about
+15 files)</td>
+<td style="text-align: left;">Haiku <code>low</code>; Sonnet
+<code>medium</code> when wall-clock time matters</td>
+<td style="text-align: left;">Pooled over both sets, both passed 30/30
+code changes. Sonnet <code>medium</code> ran faster than Haiku
+<code>low</code> (43 s vs 78 s per hard-set run).</td>
+<td style="text-align: left;">Measured; every configuration near
+ceiling, so this ranks cost</td>
+</tr>
+<tr>
+<td style="text-align: left;">Code review</td>
+<td style="text-align: left;">Haiku <code>low</code> and Sonnet
+<code>medium</code> in parallel; merge findings</td>
+<td style="text-align: left;">Some misses repeated at every effort level
+of one model; the other model usually caught them, with exceptions.</td>
+<td style="text-align: left;">A handful of cases</td>
+</tr>
+<tr>
+<td style="text-align: left;">Long exact reasoning without tools</td>
+<td style="text-align: left;">Sonnet <code>xhigh</code></td>
+<td style="text-align: left;">The only config that never failed the code
+trace.</td>
+<td style="text-align: left;">From the no-tools test</td>
+</tr>
+<tr>
+<td style="text-align: left;">Haiku above <code>medium</code></td>
+<td style="text-align: left;">Not recommended</td>
+<td style="text-align: left;">One trial each: <code>high</code> and
+<code>xhigh</code> took a wrong shortcut at 40 statements, though
+<code>xhigh</code> solved 400 where <code>medium</code> stopped at 250;
+on coding, no gain over <code>low</code> at higher cost.</td>
+<td style="text-align: left;">From the no-tools test and the easy
+set</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>max</code></td>
+<td style="text-align: left;">Only on explicit request</td>
+<td style="text-align: left;">About
+8<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+(Sonnet) and
+19<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>×</mi><annotation encoding="application/x-tex">\times</annotation></semantics></math>
+(Haiku) the cost of <code>low</code> on the easy set; no accuracy gain
+visible (ceiling effect).</td>
+<td style="text-align: left;">Measured cost</td>
+</tr>
+<tr>
+<td style="text-align: left;">Failed Haiku change</td>
+<td style="text-align: left;">Retry once on Sonnet
+<code>medium</code></td>
+<td style="text-align: left;">Not run.</td>
+<td style="text-align: left;">Untested</td>
+</tr>
+<tr>
+<td style="text-align: left;">Anything else</td>
+<td style="text-align: left;">Sonnet <code>medium</code></td>
+<td style="text-align: left;">No data.</td>
+<td style="text-align: left;">Judgment</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The main rules follow. Effort above <code>medium</code> bought
+nothing we could detect on coding tasks; this is measured, but see
+Section 5.6 for the ceiling effect. A second model looks more useful
+than more effort for review (Section 5.3). Where we have no
+measurements, we start with Sonnet <code>medium</code>; this is
+judgment, not a result.</p>
+<h2 data-number="5.2" id="sec:modeling"><span
+class="header-section-number">5.2</span> Modeling the results</h2>
+<p>Most coding cells passed, so most of the framework below cannot be
+fitted yet. For each piece we say what the current data can and cannot
+estimate.</p>
+<p><strong>Binomial uncertainty.</strong> We use Wilson 95 %
+intervals <span class="citation" data-cites="wilson1927probable">(<a
+href="#ref-wilson1927probable" role="doc-biblioref">Wilson
+1927</a>)</span> because they behave near 100 %. One cell with 3 of 3
+passes has an interval of 44–100 %; 2 of 3 gives 21–94 %. Pooled over
+both sets, code changes gave Haiku <code>low</code> 30/30 (89–100 %),
+Sonnet <code>medium</code> 30/30 (89–100 %), and Sonnet <code>low</code>
+29/30 (83–99 %). On all hard-set tasks as graded, Haiku <code>low</code>
+scored 29/30 (83–99 %), Sonnet <code>low</code> 26/30 (70–95 %), and
+Sonnet <code>medium</code>, <code>high</code> and <code>xhigh</code>
+27/30 (74–97 %). The intervals overlap, so no pass-rate difference
+between configs is established, and even 30/30 cannot exclude a failure
+rate near 10 %.</p>
+<p><strong>Item response model.</strong> In the style of Rasch <span
+class="citation" data-cites="rasch1960probabilistic">(<a
+href="#ref-rasch1960probabilistic" role="doc-biblioref">Rasch
+1960</a>)</span>, we would model
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">s</mi></mrow><mo>∣</mo><mi>c</mi><mo>,</mo><mi>t</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>θ</mi><mi>c</mi></msub><mo>−</mo><msub><mi>b</mi><mi>t</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">P(\mathrm{pass} \mid c, t) = \sigma(\theta_c - b_t)</annotation></semantics></math>
+for config
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
+and task
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>,
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>θ</mi><mi>c</mi></msub><mo>=</mo><msub><mi>α</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow></msub><mo>+</mo><msub><mi>δ</mi><mrow><mi mathvariant="normal">e</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">f</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">t</mi></mrow></msub><mo>+</mo><msub><mi>u</mi><mrow><mo stretchy="false" form="prefix">(</mo><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">d</mi><mi mathvariant="normal">e</mi><mi mathvariant="normal">l</mi></mrow><mo>,</mo><mspace width="0.167em"></mspace><mrow><mi mathvariant="normal">t</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">k</mi></mrow><mo stretchy="false" form="postfix">)</mo></mrow></msub></mrow><annotation encoding="application/x-tex">\theta_c = \alpha_{\mathrm{model}} + \delta_{\mathrm{effort}} + u_{(\mathrm{model},\,\mathrm{task})}</annotation></semantics></math>.
+Here
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>b</mi><mi>t</mi></msub><annotation encoding="application/x-tex">b_t</annotation></semantics></math>
+is task difficulty,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>α</mi><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>
+a model’s base skill,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>δ</mi><annotation encoding="application/x-tex">\delta</annotation></semantics></math>
+the effect of effort, and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>u</mi><annotation encoding="application/x-tex">u</annotation></semantics></math>
+a model-by-task term for blind spots that persist across effort levels.
+The hardest task a config passes 80 % of the time sits at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>b</mi><mo>=</mo><msub><mi>θ</mi><mi>c</mi></msub><mo>−</mo><mrow><mi mathvariant="normal">ln</mi><mo>&#8289;</mo></mrow><mn>4</mn></mrow><annotation encoding="application/x-tex">b = \theta_c - \ln 4</annotation></semantics></math>.
+The current data cannot estimate this reliably for coding: with nearly
+all passes, most
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>b</mi><mi>t</mi></msub><annotation encoding="application/x-tex">b_t</annotation></semantics></math>
+are unbounded and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>δ</mi><annotation encoding="application/x-tex">\delta</annotation></semantics></math>
+is near zero but poorly bounded. The term
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>u</mi><annotation encoding="application/x-tex">u</annotation></semantics></math>
+needs tasks that some configs pass and others fail; the review tasks
+Haiku missed at every level and the code trace are the only suggestive
+cases.</p>
+<p><strong>Difficulty horizon.</strong> For tasks graded by size
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
+(digits, statements, files), in the spirit of the 50 % time horizon of
+Kwa et al. <span class="citation" data-cites="kwa2025longtasks">(<a
+href="#ref-kwa2025longtasks" role="doc-biblioref"><span
+class="nocase">Kwa et al.</span> 2025</a>)</span>, we would fit
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mrow><mi mathvariant="normal">p</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">s</mi></mrow><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>σ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>α</mi><mi>c</mi></msub><mo>−</mo><msub><mi>β</mi><mi>c</mi></msub><mrow><mi mathvariant="normal">ln</mi><mo>&#8289;</mo></mrow><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">P(\mathrm{pass}) = \sigma(\alpha_c - \beta_c \ln x)</annotation></semantics></math>,
+so that
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>x</mi><mn>50</mn></msub><mo>=</mo><msup><mi>e</mi><mrow><msub><mi>α</mi><mi>c</mi></msub><mi>/</mi><msub><mi>β</mi><mi>c</mi></msub></mrow></msup></mrow><annotation encoding="application/x-tex">x_{50} = e^{\alpha_c / \beta_c}</annotation></semantics></math>.
+Only the code trace supports this, because length is a clean axis there.
+The longest trace solved before the first failure ranged from 20
+statements to 1,300 or more, but with one trial per cell and a few
+lengths past the break
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>β</mi><mi>c</mi></msub><annotation encoding="application/x-tex">\beta_c</annotation></semantics></math>
+is poorly determined, and some configs passed again after failing, so
+the curve is not monotone. We cannot estimate a coding horizon: the only
+code-change failure was one Sonnet <code>low</code> run in three on the
+largest feature.</p>
+<p><strong>Cost per completed task.</strong> If failures are detected
+and retried on the same config, expected cost is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi><mi>/</mi><mi>p</mi></mrow><annotation encoding="application/x-tex">c/p</annotation></semantics></math>,
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>c</mi><annotation encoding="application/x-tex">c</annotation></semantics></math>
+the cost per attempt and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>p</mi><annotation encoding="application/x-tex">p</annotation></semantics></math>
+the pass rate. For a fallback chain, Haiku first and Sonnet on failure,
+it is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>c</mi><mi>H</mi></msub><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mi>H</mi></msub><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><msub><mi>c</mi><mi>S</mi></msub></mrow><annotation encoding="application/x-tex">c_H + (1 - p_H)\,c_S</annotation></semantics></math>.
+Here the chain costs about $0.046 per task and completes 99.7 % of tasks
+(Haiku alone passed 29 of 30), against $0.21 for Sonnet
+<code>medium</code> alone ($0.189 per attempt at 90 % success). These
+figures rest on pass rates with wide intervals. If a failure goes
+undetected, nothing is retried, and the quantity to minimize is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>c</mi><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>p</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>L</mi></mrow><annotation encoding="application/x-tex">c + (1 - p)\,L</annotation></semantics></math>,
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>L</mi><annotation encoding="application/x-tex">L</annotation></semantics></math>
+is the cost of a missed defect. We measured no
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>L</mi><annotation encoding="application/x-tex">L</annotation></semantics></math>.
+We know of no undetected failure, though one grading error produced a
+false failure. A failed change with no hidden tests falls in the second
+case. We saw no false “tests pass” claims, but almost no change failed,
+so that was barely tested.</p>
+<h2 data-number="5.3" id="sec:second-model"><span
+class="header-section-number">5.3</span> A second model versus more
+effort</h2>
+<p>Two reviewers miss a bug together with probability
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>A</mi></msub><msub><mi>q</mi><mi>B</mi></msub></mrow><annotation encoding="application/x-tex">q_A q_B</annotation></semantics></math>
+only if their misses are independent; if fully correlated, the pair
+misses with probability
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>q</mi><mi>A</mi></msub><annotation encoding="application/x-tex">q_A</annotation></semantics></math>
+and the second reviewer adds cost but no coverage. The cases we saw
+point toward correlation within a model:</p>
+<ul>
+<li><p>Every Haiku level missed the same planted bug in the 2-bug
+review, and no Sonnet run, at any of four levels, flagged the broadened
+error handler in the 3-bug review.</p></li>
+<li><p>The other model usually caught them: Sonnet <code>low</code>,
+<code>medium</code>, <code>high</code> and <code>max</code> found
+Haiku’s miss, and Haiku <code>low</code> flagged the broadened handler
+in 2 of 3 runs.</p></li>
+<li><p>There were exceptions both ways: Sonnet <code>xhigh</code> shared
+Haiku’s miss, and one Haiku <code>low</code> run shared
+Sonnet’s.</p></li>
+<li><p>In the no-tools test, pairs of effort levels within a model gave
+identical wrong answers.</p></li>
+</ul>
+<p>We state this as a hypothesis: a model’s blind spots are shared
+across its effort levels more than across models. It is a handful of
+cases, one involving a bug that is arguably a design choice, so we give
+no interval. A larger study would test it by planting many bugs of known
+validity, running several trials per config, and computing for each pair
+of configs how often both miss the same bug against the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>q</mi><mi>A</mi></msub><msub><mi>q</mi><mi>B</mi></msub></mrow><annotation encoding="application/x-tex">q_A q_B</annotation></semantics></math>
+expected under independence, within a model and across models, with
+intervals. It would also compare the best two-model pair with the best
+single config at equal cost. We would fix this analysis, including the
+exclusion rules, before running.</p>
+<h2 data-number="5.4" id="sec:lessons"><span
+class="header-section-number">5.4</span> Lessons for building agent
+benchmarks</h2>
+<p><strong>Folder trust and worktrees.</strong> Claude Code asks whether
+to trust any new folder, but not in an empty one, so test the prompt in
+a fresh worktree and accept it once by hand (Section 3.1).</p>
+<p><strong>Permission friction from chained commands.</strong> An
+allowlist matches one command at a time, but agents chain commands, so
+read the denial log before the first full sweep and widen the allowlist
+for harmless shapes (Section 4.4).</p>
+<p><strong>Grading checks.</strong> Three harness problems, a false
+failure, an unreplayable run and a misread claim, each needed a check of
+its own (Section 4.4).</p>
+<p><strong>Real bugs in clean commits.</strong> Review tasks built from
+real diffs contain real defects the task author did not plant, and most
+of our pilot false alarms were of this kind. Penalizing them would
+punish good reviews, but the resulting rule measures recall on planted
+bugs, not precision.</p>
+<p><strong>AI-written tasks need verification.</strong> Model-written
+briefs leaked helper names or omitted interface details, and one hard
+task re-planted an earlier bug. A separate verifier caught these, and an
+oracle self-test, in which the known-correct answer must pass and doing
+nothing must fail, caught a task whose commit also added a
+dependency.</p>
+<h2 data-number="5.5" id="sec:ethics"><span
+class="header-section-number">5.5</span> Ethics</h2>
+<p>The code of the private repository used in the coding experiments is
+withheld, and the report describes its components only generically. The
+study involved no human subjects. Tasks and answer keys were written by
+models and checked by models and the oracle self-test, not by people.
+Dollar figures are API-equivalent estimates, not subscription usage or
+billing data.</p>
+<h2 data-number="5.6" id="sec:limitations"><span
+class="header-section-number">5.6</span> Limitations</h2>
+<p><strong>One private repository, one language, 22 coding
+tasks.</strong> The 10-config sweep had one trial per cell and the hard
+set three. The routing table is therefore a starting point for similar
+Python agent code, not a general result, and a single cell with 3 of 3
+passes has an interval of 44–100 %.</p>
+<p><strong>Ceiling effect.</strong> Almost every task passed at every
+config, so we did not find where coding fails. That effort above
+<code>medium</code> bought nothing may mean only that the tasks were too
+easy to need it; effort clearly mattered only in the no-tools trace,
+which is not a coding task.</p>
+<p><strong>Error correlation rests on a handful of cases.</strong> The
+pattern has exceptions in both directions, so the second-model claim is
+a hypothesis, not an estimate.</p>
+<p><strong>Model-written tasks and keys.</strong> One planted review bug
+was arguably not a bug. Keys were checked by the oracle and spot reads,
+not by people, so some failures may be key errors, and Sonnet-written
+tasks may favor Sonnet. We report hard-set pass rates both as graded and
+with that bug set aside.</p>
+<p><strong>Conditions changed during the study.</strong> The allowlist
+was widened partway through the 10-config sweep, and one grading anomaly
+was replaced by a fresh sample, with the original row kept and marked.
+Early and late runs were therefore not under identical conditions, and
+we did not test whether the widening changed time, tokens or
+outcomes.</p>
+<p><strong>Global instructions were loaded.</strong> Agents loaded the
+user’s global Claude Code instructions, as in real use. This is not a
+clean baseline, and a clean configuration might behave differently.</p>
+<p><strong>Assumed cache multipliers.</strong> Dollar figures use
+assumed cache multipliers, not billing data, so absolute dollars could
+be off; ratios between configs are more reliable.</p>
+<p><strong>Costs cannot be re-derived from the repository.</strong> They
+were computed from session transcripts, which are not published. Readers
+can check the method but not reproduce the totals.</p>
+<p><strong>Model versions.</strong> The models are specific to November
+2026, and the routing table may not hold for later ones.</p>
+<h1 data-number="6" id="sec:conclusion"><span
+class="header-section-number">6</span> Conclusion</h1>
+<p>We measured how the choice of model and reasoning effort affects
+Claude Code sub-agents, using Claude Haiku 5.5 and Claude Sonnet 5.5 at
+up to five effort levels across 229 tool-free reasoning runs and 270
+coding runs. For coding work, the cheapest configuration was enough on
+our tasks, though nearly every task passed at every configuration, so
+this may be a ceiling effect. Haiku <code>low</code> passed all 30 fix
+and feature runs across the easy and hard sets, at $0.041 per success
+over all hard-set tasks, reviews included, against $0.207 for Sonnet
+<code>low</code>. Effort above <code>medium</code> raised cost with no
+pass-rate gain we could detect: Sonnet <code>xhigh</code> cost about 2.2
+times Sonnet <code>low</code> per success on the easy set and 2.6 times
+on the hard set, and <code>max</code> cost about 8 times (Sonnet) and 19
+times (Haiku) the <code>low</code> level.</p>
+<p>Effort and model choice mattered in two places. On long exact
+reasoning without tools, only Sonnet <code>xhigh</code> traced programs
+of 1,300 statements without failure, and Haiku <code>high</code> and
+<code>xhigh</code> took a wrong shortcut that Haiku <code>low</code> and
+<code>medium</code> avoided. On code review we have a hypothesis, not a
+finding: some misses repeated at every effort level of one model while
+the other model usually caught them, with exceptions in both
+directions.</p>
+<p>For routing, this suggests the following. Send lookups and code
+changes to Haiku <code>low</code>, or to Sonnet <code>medium</code> when
+wall-clock time matters. Send review to Haiku <code>low</code> and
+Sonnet <code>medium</code> in parallel and merge their findings. Reserve
+Sonnet <code>xhigh</code> for long exact reasoning without tools, and
+use <code>max</code> only on request. These rules differ in strength.
+The first is measured, the review rule rests on a handful of cases, and
+retrying a failed Haiku change once on Sonnet <code>medium</code> is
+untested.</p>
+<p>The main caveat is a ceiling effect. We used one private repository,
+one language, and 22 coding tasks, and almost every task passed at every
+config. We therefore did not find where coding reliability breaks down,
+and the finding that effort above <code>medium</code> bought nothing may
+reflect tasks that were too easy to need it. Wilson intervals for the
+pooled counts remain wide, and the dollar figures rest on assumed cache
+multipliers.</p>
+<p><strong>Future work.</strong> The next study should be designed to
+test the second-model hypothesis directly.</p>
+<ol>
+<li><p>Use several repositories in at least three languages and about
+100 validated tasks, selected in a pilot so that pass rates span 20 % to
+80 %, and drop tasks that every config passes or fails.</p></li>
+<li><p>Run five trials per key config, with human review of every answer
+key in addition to the oracle self-test, and with permission settings
+and a clean Claude Code configuration fixed before any run.</p></li>
+<li><p>Fit the item response model and compute error-correlation
+statistics within and across models, with intervals, under an analysis
+registered in advance, including how to treat harness errors.</p></li>
+<li><p>Run a subset of SWE-bench <span class="citation"
+data-cites="jimenez2024swebench">(<a href="#ref-jimenez2024swebench"
+role="doc-biblioref">Jimenez et al. 2024</a>)</span> in the same harness
+for comparability, and test the untested retry rule. We estimate the
+larger study at about $550 to $1,200 at API prices (2,500 runs at $0.22
+to $0.48 per run, the hard set’s average and Sonnet <code>xhigh</code>’s
+per-run cost), excluding the labor of human key review.</p></li>
+</ol>
+<h1 class="unnumbered" id="bibliography">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent"
+role="list">
+<div id="ref-demillo1978hints" class="csl-entry" role="listitem">
+DeMillo, Richard A., Richard J. Lipton, and Frederick G. Sayward. 1978.
+<span>“Hints on Test Data Selection: Help for the Practicing
+Programmer.”</span> <em>Computer</em> 11 (4): 34–41.
+</div>
+<div id="ref-jimenez2024swebench" class="csl-entry" role="listitem">
+Jimenez, Carlos E., John Yang, Alexander Wettig, et al. 2024.
+<span>“<span>SWE</span>-Bench: Can Language Models Resolve Real-World
+<span>GitHub</span> Issues?”</span> <em>International Conference on
+Learning Representations (ICLR)</em>.
+</div>
+<div id="ref-kwa2025longtasks" class="csl-entry" role="listitem">
+<span class="nocase">Kwa, Thomas, Ben West, Joel Becker, et al.</span>
+2025. <span>“Measuring <span>AI</span> Ability to Complete Long Software
+Tasks.”</span> <em>Advances in Neural Information Processing Systems
+(NeurIPS)</em>.
+</div>
+<div id="ref-rasch1960probabilistic" class="csl-entry" role="listitem">
+Rasch, Georg. 1960. <em>Probabilistic Models for Some Intelligence and
+Attainment Tests</em>. Danish Institute for Educational Research.
+</div>
+<div id="ref-wilson1927probable" class="csl-entry" role="listitem">
+Wilson, Edwin B. 1927. <span>“Probable Inference, the Law of Succession,
+and Statistical Inference.”</span> <em>Journal of the American
+Statistical Association</em> 22 (158): 209–12.
+</div>
+</div>
+</body>
+</html>

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Commit ids of the private target repo are replaced with COMMIT_* placeholders.
 # Prepare build folders that the task-writing agents read from and write into.
 set -eu
 R=${BENCH_REPO:-~/.cache/coding-bench/repos/target}  # the target repo clone
@@ -12,7 +13,7 @@ wt() {  # wt <path> <rev>: fresh detached worktree
 }
 
 # Replay tasks: briefs are written from the commit, its diff, and its hidden tests.
-for c in bf88a3f ec8bef6 d1d25cf 43a549e; do
+for c in COMMIT_F1 COMMIT_F2 COMMIT_F3 COMMIT_F4; do
   d="$B/replay-$c"; mkdir -p "$d"
   git -C "$R" log -1 --format='%B' "$c" > "$d/commit_message.txt"
   git -C "$R" show --format= "$c" -- src > "$d/src.diff"
@@ -31,7 +32,7 @@ for k in near far; do
 done
 
 # Review diffs: plant bugs into the post-commit state of a real commit.
-for c in e966b08 0c62b65; do
+for c in COMMIT_R2 COMMIT_R3; do
   d="$B/review-$c"; mkdir -p "$d"
   git -C "$R" log -1 --format='%B' "$c" > "$d/commit_message.txt"
   git -C "$R" show --format= "$c" -- src > "$d/original.diff"

@@ -4,7 +4,7 @@ A study of which model and effort level to use for each kind of work a Claude Co
 
 Each sub-agent runs as its own interactive Claude Code session in a cmux terminal pane. The orchestrating session reads the reply from the session transcript. The study compares Claude Haiku 5.5 (`claude-haiku-5-5`) and Claude Sonnet 5.5 (`claude-sonnet-5-5`) at effort levels `low`, `medium`, `high`, `xhigh`, and `max`. No Opus sub-agents were used. Runs were made November 16–17, 2026.
 
-**Report:** https://pleyva2004.github.io/subagent-routing-bench/ (methods, uncertainty, figures). This README is the short version.
+**Paper:** [read online](https://pleyva2004.github.io/subagent-routing-bench/) or as a [PDF](https://pleyva2004.github.io/subagent-routing-bench/paper.pdf) (methods, uncertainty, figures). The LaTeX source is in `paper/`. This README is the short version.
 
 ## Key findings
 
@@ -27,16 +27,16 @@ Coding runs cost about $24 (easy set) and $34 (hard set) at API-equivalent price
 ## Folder layout
 
 ```
-analysis/FACTS.md                   Single source of numbers for the report
-analysis/assemble_report.py         Builds docs/index.md from docs/sections/
+analysis/FACTS.md                   Single source of numbers for the paper
 analysis/cost_model.py              How dollar costs were computed
-analysis/figures.py                 Makes the charts in docs/assets/figures/
+analysis/make_tikz_figures.py       Generates the paper's pgfplots figures from data/
 data/README.md                      Data dictionary for the files below
 data/coding/runs.jsonl              One record per coding run (272 rows)
 data/coding/tasks.json              Summary of the 22 coding tasks (not the runnable task file)
 data/coding/costs.json              Per-config totals and Wilson 95% intervals
 data/coding/denials_hard_set.json   Denied tool calls in the hard set, by category
-docs/                               Report source; figures go in docs/assets/figures/
+docs/                               Published site: index.html (web version of the paper),
+                                    paper.pdf, assets/ (stylesheet, SVG figures)
 experiments/01-reasoning-ladder/    Reasoning without tools: gen.py, run.py, analyze.py,
                                     variants.py, task files, results.jsonl, console logs
 harness/cmux-subagent/              claude-pane.sh (launch and collect a sub-agent in a pane),
@@ -44,6 +44,19 @@ harness/cmux-subagent/              claude-pane.sh (launch and collect a sub-age
 harness/coding-bench/               bench.py (run and grade coding tasks), task builders,
                                     oracle and admission checks, analysis scripts,
                                     settings/ (permission allow and deny files)
+paper/                              LaTeX source: main.tex, abstract.tex, sections/,
+                                    figures/, references.bib, arxiv-style.sty,
+                                    build_web.py (makes docs/index.html and docs/paper.pdf)
+```
+
+## Build the paper
+
+Needs pdfLaTeX with `pgfplots`, `pandoc` and `pdftocairo` (poppler).
+
+```bash
+python3 analysis/make_tikz_figures.py      # regenerate figures from data/
+cd paper && latexmk -pdf main.tex && cd ..  # the PDF
+python3 paper/build_web.py                 # docs/index.html, docs/paper.pdf, SVG figures
 ```
 
 ## Reproduce

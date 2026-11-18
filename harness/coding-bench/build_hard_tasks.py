@@ -1,4 +1,5 @@
 """Assemble hard_tasks.json from the hard build folders. Run after writers and verifiers finish."""
+# Commit ids of the private target repo are replaced with COMMIT_* placeholders.
 from __future__ import annotations
 
 import json
@@ -9,7 +10,7 @@ from typing import Any
 ROOT = os.path.expanduser("~/.cache/coding-bench")
 REPO = os.environ.get("BENCH_REPO", f"{ROOT}/repos/target")  # the target repo clone
 B = f"{ROOT}/hard"
-HEAD = "60913d6"
+HEAD = "COMMIT_HEAD"
 
 
 def git(*a: str, cwd: str = REPO) -> str:
@@ -43,9 +44,9 @@ def feature(tid: str, c: str, brief_path: str, level: int) -> dict[str, Any]:
     return t
 
 
-for lvl, c in ((5, "5e70762"), (6, "237d79f"), (7, "e34653c")):
+for lvl, c in ((5, "COMMIT_F5"), (6, "COMMIT_F6"), (7, "COMMIT_F7")):
     tasks.append(feature(f"feature-{lvl}-{c}", c, f"{B}/replay-{c}/brief.md", lvl))
-for c in ("d1d25cf", "43a549e"):
+for c in ("COMMIT_F3", "COMMIT_F4"):
     tasks.append(feature(f"feature-terse-{c}", c, f"{B}/terse-{c}.md", 8))
 
 for lvl, k in ((3, "hidden-far"), (4, "two-bugs"), (5, "misleading")):
@@ -58,7 +59,7 @@ for lvl, k in ((3, "hidden-far"), (4, "two-bugs"), (5, "misleading")):
                   "report": open(f"{d}/report.md").read().strip(), "hidden_test_files": bug["hidden_test_files"],
                   "hidden_from": HEAD, "must_pass": [junit_id(t) for t in must], "expected_files": bug["files"]})
 
-for lvl, c in ((4, "58f2bbe"), (5, "4dd880a")):
+for lvl, c in ((4, "COMMIT_R4"), (5, "COMMIT_R5")):
     d = f"{B}/review-{c}"
     patch = f"{B}/review-{c}.patch"
     open(patch, "w").write(git("diff", f"{c}^", "--", "src", "tests", cwd=f"{d}/wt"))

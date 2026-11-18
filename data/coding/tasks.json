@@ -32,7 +32,7 @@
   "tests_that_must_pass": 1,
   "hidden_test_files": 0,
   "report_words": 156,
-  "description": "A one-line logic slip makes a tool report failed commands as successful. The report describes that tool, and a visible test fails."
+  "description": "A one-line logic slip makes a component report failures as successes. The report describes that component, and a visible test fails."
  },
  {
   "id": "fix-2-far",
@@ -43,7 +43,7 @@
   "tests_that_must_pass": 1,
   "hidden_test_files": 0,
   "report_words": 194,
-  "description": "A two-line early exit in a domain object drops tools when several skills are selected. The report describes only an HTTP preview endpoint and agent behavior; a visible test fails."
+  "description": "A two-line early exit in a lower-level object drops part of a computed result. The report describes only symptoms in higher-level components; a visible test fails."
  },
  {
   "id": "feature-1",
@@ -54,7 +54,7 @@
   "reference_lines_added": 33,
   "hidden_tests": 6,
   "brief_words": 378,
-  "description": "Re-implement a real commit, a model adapter's request payload, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, a request-format fix, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "feature-2",
@@ -65,7 +65,7 @@
   "reference_lines_added": 25,
   "hidden_tests": 4,
   "brief_words": 375,
-  "description": "Re-implement a real commit, a CLI flag for full-screen mode, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, a new command-line flag, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "feature-3",
@@ -76,7 +76,7 @@
   "reference_lines_added": 41,
   "hidden_tests": 4,
   "brief_words": 382,
-  "description": "Re-implement a real commit, opt-in WebSocket token auth, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, an opt-in authentication feature, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "feature-4",
@@ -87,7 +87,7 @@
   "reference_lines_added": 114,
   "hidden_tests": 3,
   "brief_words": 324,
-  "description": "Re-implement a real commit, persistent sessions that survive restarts, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, a persistence feature, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "review-1",
@@ -103,7 +103,7 @@
   "type": "review",
   "level": 2,
   "planted_bugs": 1,
-  "description": "A real commit's diff with 1 planted bug: two Markdown rules in a front-end renderer run in the wrong order."
+  "description": "A real commit's diff with 1 planted bug: two formatting rules run in the wrong order."
  },
  {
   "id": "review-3",
@@ -111,7 +111,7 @@
   "type": "review",
   "level": 3,
   "planted_bugs": 2,
-  "description": "A real commit's diff with 2 planted bugs: a shutdown wait loop re-sends the termination signal, and the PID file records the parent's PID."
+  "description": "A real commit's diff with 2 planted bugs: a shutdown-loop bug and a process-tracking bug."
  },
  {
   "id": "feature-5",
@@ -122,7 +122,7 @@
   "reference_lines_added": 188,
   "hidden_tests": 4,
   "brief_words": 430,
-  "description": "Re-implement a real commit, a SQLite and JSONL storage layer, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, a storage layer, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "feature-6",
@@ -133,7 +133,7 @@
   "reference_lines_added": 196,
   "hidden_tests": 7,
   "brief_words": 490,
-  "description": "Re-implement a real commit, model-driven tool calling, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, a tool-calling feature, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "feature-7",
@@ -144,7 +144,7 @@
   "reference_lines_added": 602,
   "hidden_tests": 32,
   "brief_words": 720,
-  "description": "Re-implement a real commit, retrieval-based skill selection, from a ticket; graded by the commit's own tests."
+  "description": "Re-implement a real commit, a retrieval feature, from a ticket; graded by the commit's own tests."
  },
  {
   "id": "feature-3-terse",
@@ -155,7 +155,7 @@
   "reference_lines_added": 41,
   "hidden_tests": 4,
   "brief_words": 70,
-  "description": "The 5-file WebSocket token-auth feature, briefed in a 70-word ticket."
+  "description": "The 5-file authentication feature (feature-3), briefed in a 70-word ticket."
  },
  {
   "id": "feature-4-terse",
@@ -166,7 +166,7 @@
   "reference_lines_added": 114,
   "hidden_tests": 3,
   "brief_words": 115,
-  "description": "The 8-file session-persistence feature, briefed in a 115-word ticket."
+  "description": "The 8-file persistence feature (feature-4), briefed in a 115-word ticket."
  },
  {
   "id": "fix-3-hidden-far",
@@ -177,7 +177,7 @@
   "tests_that_must_pass": 5,
   "hidden_test_files": 4,
   "report_words": 160,
-  "description": "A serialization option in the storage layer drops each stored event's type. It shows only when replaying a session over WebSocket, and the 5 tests that would catch it are hidden."
+  "description": "A serialization option in a lower layer drops a field from stored records. It shows only through a higher-level replay feature, and the 5 tests that would catch it are hidden."
  },
  {
   "id": "fix-4-two-bugs",
@@ -188,7 +188,7 @@
   "tests_that_must_pass": 2,
   "hidden_test_files": 1,
   "report_words": 136,
-  "description": "Two bugs (a misspelled environment variable and a renamed query parameter) behind one symptom. Only one has a visible failing test."
+  "description": "Two bugs (a misspelled setting name and a renamed request parameter) behind one symptom. Only one has a visible failing test."
  },
  {
   "id": "fix-5-misleading",
@@ -199,7 +199,7 @@
   "tests_that_must_pass": 1,
   "hidden_test_files": 1,
   "report_words": 184,
-  "description": "A model-adapter bug breaks tool-call arguments for one provider. The report guesses the tool registry is at fault, and the test that would catch the bug is hidden."
+  "description": "A bug in one provider's adapter corrupts part of each request. The report blames a different component, and the test that would catch the bug is hidden."
  },
  {
   "id": "review-4",
@@ -207,7 +207,7 @@
   "type": "review",
   "level": 4,
   "planted_bugs": 2,
-  "description": "A real commit's diff (built-in tools and shell hardening) with 2 subtle planted bugs that the existing tests don't catch."
+  "description": "A real commit's diff (a tools feature) with 2 subtle planted bugs that the existing tests don't catch."
  },
  {
   "id": "review-5",
@@ -215,6 +215,6 @@
   "type": "review",
   "level": 5,
   "planted_bugs": 3,
-  "description": "A real commit's diff (two model adapters) with 3 subtle planted bugs that the existing tests don't catch. One, a catch-all exception handler, is arguably not a defect."
+  "description": "A real commit's diff (a model-adapter feature) with 3 subtle planted bugs that the existing tests don't catch. One, an error handler broadened to catch every exception, is arguably not a defect."
  }
 ]

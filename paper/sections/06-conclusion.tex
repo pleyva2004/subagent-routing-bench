@@ -1,0 +1,18 @@
+\section{Conclusion}\label{sec:conclusion}
+
+We measured how the choice of model and reasoning effort affects Claude Code sub-agents, using Claude Haiku~5.5 and Claude Sonnet~5.5 at up to five effort levels across 229 tool-free reasoning runs and 270 coding runs. For coding work, the cheapest configuration was enough on our tasks, though nearly every task passed at every configuration, so this may be a ceiling effect. Haiku \texttt{low} passed all 30 fix and feature runs across the easy and hard sets, at \$0.041 per success over all hard-set tasks, reviews included, against \$0.207 for Sonnet \texttt{low}. Effort above \texttt{medium} raised cost with no pass-rate gain we could detect: Sonnet \texttt{xhigh} cost about 2.2 times Sonnet \texttt{low} per success on the easy set and 2.6 times on the hard set, and \texttt{max} cost about 8 times (Sonnet) and 19 times (Haiku) the \texttt{low} level.
+
+Effort and model choice mattered in two places. On long exact reasoning without tools, only Sonnet \texttt{xhigh} traced programs of 1,300 statements without failure, and Haiku \texttt{high} and \texttt{xhigh} took a wrong shortcut that Haiku \texttt{low} and \texttt{medium} avoided. On code review we have a hypothesis, not a finding: some misses repeated at every effort level of one model while the other model usually caught them, with exceptions in both directions.
+
+For routing, this suggests the following. Send lookups and code changes to Haiku \texttt{low}, or to Sonnet \texttt{medium} when wall-clock time matters. Send review to Haiku \texttt{low} and Sonnet \texttt{medium} in parallel and merge their findings. Reserve Sonnet \texttt{xhigh} for long exact reasoning without tools, and use \texttt{max} only on request. These rules differ in strength. The first is measured, the review rule rests on a handful of cases, and retrying a failed Haiku change once on Sonnet \texttt{medium} is untested.
+
+The main caveat is a ceiling effect. We used one private repository, one language, and 22 coding tasks, and almost every task passed at every config. We therefore did not find where coding reliability breaks down, and the finding that effort above \texttt{medium} bought nothing may reflect tasks that were too easy to need it. Wilson intervals for the pooled counts remain wide, and the dollar figures rest on assumed cache multipliers.
+
+\paragraph{Future work.}
+The next study should be designed to test the second-model hypothesis directly.
+\begin{enumerate}[leftmargin=*]
+  \item Use several repositories in at least three languages and about 100 validated tasks, selected in a pilot so that pass rates span 20\,\% to 80\,\%, and drop tasks that every config passes or fails.
+  \item Run five trials per key config, with human review of every answer key in addition to the oracle self-test, and with permission settings and a clean Claude Code configuration fixed before any run.
+  \item Fit the item response model and compute error-correlation statistics within and across models, with intervals, under an analysis registered in advance, including how to treat harness errors.
+  \item Run a subset of SWE-bench~\cite{jimenez2024swebench} in the same harness for comparability, and test the untested retry rule. We estimate the larger study at about \$550 to \$1,200 at API prices (2,500 runs at \$0.22 to \$0.48 per run, the hard set's average and Sonnet \texttt{xhigh}'s per-run cost), excluding the labor of human key review.
+\end{enumerate}
