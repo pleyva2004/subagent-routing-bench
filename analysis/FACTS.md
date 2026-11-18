@@ -142,7 +142,7 @@ Harness problems found and fixed during this experiment:
 
 - Prices used (first-party API, November 2026): Sonnet 5.5 $2.00 per million input tokens, $10.00 output, $0.10 cache reads. Haiku 5.5 $0.10 input and $0.50 output for prompts up to 100K tokens, $0.50 and $2.50 beyond. Assumed where not listed: cache writes at 1.25× the input rate; Haiku cache reads at 0.1× the input rate.
 - Dollars are API-equivalent and computed per request from each transcript, applying Haiku's long-prompt tier per request. They are not subscription usage.
-- Haiku costs about 1/20 as much per token as Sonnet. It used about 2.5× the output tokens and about 2× the agent time of Sonnet `low`, and still cost about 1/5 as much per successful coding task.
+- Haiku costs about 1/20 as much per token as Sonnet for prompts up to 100K tokens, and about 1/4 beyond that at its long-prompt rate. It used about 2.5× the output tokens and about 2× the agent time of Sonnet `low`, and still cost about 1/5 as much per successful coding task.
 - Above `medium`, effort added cost with no accuracy gain we could detect (nearly every task passed at every config): Sonnet `xhigh` cost about 2.2× (easy set) and 2.6× (hard set) Sonnet `low` per success; `max` cost about 8× (Sonnet) and 19× (Haiku) its `low` level on the easy set.
 - Whole study: the coding runs cost about $24 (easy set, 120 runs) and $34 (hard set, 150 runs) at API prices.
 

@@ -1,0 +1,31 @@
+% Vertical pipeline figure for the poster: five stages, top to bottom.
+\begin{tikzpicture}[
+    >=Stealth,
+    box/.style={
+      rectangle,
+      rounded corners=3pt,
+      draw=black!60,
+      fill=blue!4,
+      minimum height=0.9cm,
+      minimum width=5.0cm,
+      align=center,
+      inner sep=4pt,
+      text width=4.7cm,
+      font=\small
+    },
+    arrow/.style={->, thick, draw=black!60, shorten <=2pt, shorten >=2pt, line width=0.8pt},
+    node distance=0.55cm
+  ]
+
+  \node[box] (orch)   {\textbf{Orchestrator}\\[1pt]\footnotesize Claude Code session plans and fans out};
+  \node[box, below=of orch]  (pane)   {\textbf{Sub-agent pane}\\[1pt]\footnotesize Claude Code in cmux; model + effort};
+  \node[box, below=of pane]  (wt)     {\textbf{Fresh worktree}\\[1pt]\footnotesize trusted slot; allowlist, dontAsk mode};
+  \node[box, below=of wt]    (grade)  {\textbf{Grade}\\[1pt]\footnotesize original + hidden tests, from the worktree};
+  \node[box, below=of grade] (record) {\textbf{Record}\\[1pt]\footnotesize pass, tokens, API-equivalent dollars};
+
+  \draw[arrow] (orch)  -- (pane);
+  \draw[arrow] (pane)  -- (wt);
+  \draw[arrow] (wt)    -- (grade);
+  \draw[arrow] (grade) -- (record);
+
+\end{tikzpicture}

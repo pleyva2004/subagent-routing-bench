@@ -46,7 +46,7 @@
   <link rel="stylesheet" href="assets/paper.css" />
 </head>
 <body>
-<nav class="paper-nav"><a href="paper.pdf">PDF</a> &middot; <a href="https://github.com/pleyva2004/subagent-routing-bench">Code and data</a></nav>
+<nav class="paper-nav"><a href="paper.pdf">PDF</a> &middot; <a href="poster.html">Poster</a> &middot; <a href="https://github.com/pleyva2004/subagent-routing-bench">Code and data</a></nav>
 <header id="title-block-header">
 <h1 class="title">Routing Claude Code Sub-Agents by Model and Effort: A
 Case Study</h1>
@@ -824,10 +824,11 @@ cheaper than Sonnet <code>low</code> on the easy set. Haiku
 <code>low</code> cost $0.017 on the easy set and $0.041 on the hard set;
 Sonnet <code>low</code> cost $0.118 and $0.207.</p>
 <p><strong>Haiku’s price against its tokens and time.</strong> Haiku
-costs about 1/20 as much per token as Sonnet but writes more and runs
-longer. Against Sonnet <code>low</code> on the hard set it used about
-2.5 times the output tokens and about twice the agent time, and still
-cost about one fifth as much per success. The price is wall-clock:
+costs about 1/20 as much per token as Sonnet for prompts up to 100K
+tokens (about 1/4 beyond that, at its long-prompt rate) but writes more
+and runs longer. Against Sonnet <code>low</code> on the hard set it used
+about 2.5 times the output tokens and about twice the agent time, and
+still cost about one fifth as much per success. The price is wall-clock:
 Sonnet <code>medium</code> took 43 s per hard-set run and 24 s per
 easy-set run, against 78 s and 34 s for Haiku <code>low</code>.</p>
 <p><strong>Effort above medium.</strong> Sonnet <code>xhigh</code> cost
