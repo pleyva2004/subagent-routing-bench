@@ -1,0 +1,7 @@
+{"permissions": {
+  "allow": ["Read(//Users/<you>/.cache/coding-bench/**)",
+            "Edit(//Users/<you>/.cache/coding-bench/hard/replay-*/brief.md)", "Edit(//Users/<you>/.cache/coding-bench/hard/terse-*.md)",
+            "Bash(grep:*)", "Bash(find:*)", "Bash(ls:*)", "Bash(cat:*)", "Bash(head:*)", "Bash(sed -n:*)", "Bash(wc:*)",
+            "Bash(git log:*)", "Bash(git show:*)", "Bash(git diff:*)"],
+  "deny": ["Agent", "Task", "WebFetch", "WebSearch", "Write"]
+}}

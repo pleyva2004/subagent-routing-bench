@@ -1,0 +1,4 @@
+{"permissions": {
+  "allow": ["Read(//Users/<you>/.cache/coding-bench/**)", "Edit(//Users/<you>/.cache/coding-bench/build/**)", "Write(//Users/<you>/.cache/coding-bench/build/**)", "Glob", "Grep"],
+  "deny": ["Agent", "Task", "WebFetch", "WebSearch"]
+}}

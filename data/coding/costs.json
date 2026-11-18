@@ -1,0 +1,257 @@
+{
+ "easy|sonnet:high": {
+  "set": "easy",
+  "config": "sonnet:high",
+  "runs": 12,
+  "passes": 12,
+  "pass_rate_95ci": [
+   0.757,
+   1.0
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 1.965,
+  "cost_usd_per_run": 0.1638,
+  "cost_usd_per_pass": 0.1638,
+  "output_tokens_total": 45020,
+  "agent_seconds_per_run": 34.1
+ },
+ "easy|haiku:medium": {
+  "set": "easy",
+  "config": "haiku:medium",
+  "runs": 12,
+  "passes": 11,
+  "pass_rate_95ci": [
+   0.646,
+   0.985
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 0.275,
+  "cost_usd_per_run": 0.023,
+  "cost_usd_per_pass": 0.025,
+  "output_tokens_total": 94630,
+  "agent_seconds_per_run": 48.1
+ },
+ "easy|haiku:low": {
+  "set": "easy",
+  "config": "haiku:low",
+  "runs": 12,
+  "passes": 11,
+  "pass_rate_95ci": [
+   0.646,
+   0.985
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 0.192,
+  "cost_usd_per_run": 0.016,
+  "cost_usd_per_pass": 0.0174,
+  "output_tokens_total": 65623,
+  "agent_seconds_per_run": 34.1
+ },
+ "easy|haiku:high": {
+  "set": "easy",
+  "config": "haiku:high",
+  "runs": 12,
+  "passes": 11,
+  "pass_rate_95ci": [
+   0.646,
+   0.985
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 0.445,
+  "cost_usd_per_run": 0.0371,
+  "cost_usd_per_pass": 0.0405,
+  "output_tokens_total": 153914,
+  "agent_seconds_per_run": 68.1
+ },
+ "easy|haiku:xhigh": {
+  "set": "easy",
+  "config": "haiku:xhigh",
+  "runs": 12,
+  "passes": 11,
+  "pass_rate_95ci": [
+   0.646,
+   0.985
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 1.01,
+  "cost_usd_per_run": 0.0842,
+  "cost_usd_per_pass": 0.0918,
+  "output_tokens_total": 324141,
+  "agent_seconds_per_run": 130.1
+ },
+ "easy|sonnet:low": {
+  "set": "easy",
+  "config": "sonnet:low",
+  "runs": 12,
+  "passes": 12,
+  "pass_rate_95ci": [
+   0.757,
+   1.0
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 1.421,
+  "cost_usd_per_run": 0.1184,
+  "cost_usd_per_pass": 0.1184,
+  "output_tokens_total": 27031,
+  "agent_seconds_per_run": 34.7
+ },
+ "easy|sonnet:medium": {
+  "set": "easy",
+  "config": "sonnet:medium",
+  "runs": 12,
+  "passes": 12,
+  "pass_rate_95ci": [
+   0.757,
+   1.0
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 1.387,
+  "cost_usd_per_run": 0.1156,
+  "cost_usd_per_pass": 0.1156,
+  "output_tokens_total": 29717,
+  "agent_seconds_per_run": 23.6
+ },
+ "easy|sonnet:xhigh": {
+  "set": "easy",
+  "config": "sonnet:xhigh",
+  "runs": 12,
+  "passes": 11,
+  "pass_rate_95ci": [
+   0.646,
+   0.985
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 2.842,
+  "cost_usd_per_run": 0.2369,
+  "cost_usd_per_pass": 0.2584,
+  "output_tokens_total": 90798,
+  "agent_seconds_per_run": 63.9
+ },
+ "easy|sonnet:max": {
+  "set": "easy",
+  "config": "sonnet:max",
+  "runs": 12,
+  "passes": 12,
+  "pass_rate_95ci": [
+   0.757,
+   1.0
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 10.744,
+  "cost_usd_per_run": 0.8954,
+  "cost_usd_per_pass": 0.8954,
+  "output_tokens_total": 549184,
+  "agent_seconds_per_run": 327.1
+ },
+ "easy|haiku:max": {
+  "set": "easy",
+  "config": "haiku:max",
+  "runs": 12,
+  "passes": 11,
+  "pass_rate_95ci": [
+   0.646,
+   0.985
+  ],
+  "code_change_passes": 6,
+  "code_change_runs": 6,
+  "cost_usd_total": 3.724,
+  "cost_usd_per_run": 0.3103,
+  "cost_usd_per_pass": 0.3385,
+  "output_tokens_total": 909550,
+  "agent_seconds_per_run": 332.0
+ },
+ "hard|sonnet:low": {
+  "set": "hard",
+  "config": "sonnet:low",
+  "runs": 30,
+  "passes": 26,
+  "pass_rate_95ci": [
+   0.703,
+   0.947
+  ],
+  "code_change_passes": 23,
+  "code_change_runs": 24,
+  "cost_usd_total": 5.384,
+  "cost_usd_per_run": 0.1795,
+  "cost_usd_per_pass": 0.2071,
+  "output_tokens_total": 167822,
+  "agent_seconds_per_run": 36.0
+ },
+ "hard|sonnet:medium": {
+  "set": "hard",
+  "config": "sonnet:medium",
+  "runs": 30,
+  "passes": 27,
+  "pass_rate_95ci": [
+   0.744,
+   0.965
+  ],
+  "code_change_passes": 24,
+  "code_change_runs": 24,
+  "cost_usd_total": 5.662,
+  "cost_usd_per_run": 0.1887,
+  "cost_usd_per_pass": 0.2097,
+  "output_tokens_total": 193967,
+  "agent_seconds_per_run": 43.2
+ },
+ "hard|haiku:low": {
+  "set": "hard",
+  "config": "haiku:low",
+  "runs": 30,
+  "passes": 29,
+  "pass_rate_95ci": [
+   0.833,
+   0.994
+  ],
+  "code_change_passes": 24,
+  "code_change_runs": 24,
+  "cost_usd_total": 1.188,
+  "cost_usd_per_run": 0.0396,
+  "cost_usd_per_pass": 0.041,
+  "output_tokens_total": 426762,
+  "agent_seconds_per_run": 77.6
+ },
+ "hard|sonnet:high": {
+  "set": "hard",
+  "config": "sonnet:high",
+  "runs": 30,
+  "passes": 27,
+  "pass_rate_95ci": [
+   0.744,
+   0.965
+  ],
+  "code_change_passes": 24,
+  "code_change_runs": 24,
+  "cost_usd_total": 7.002,
+  "cost_usd_per_run": 0.2334,
+  "cost_usd_per_pass": 0.2593,
+  "output_tokens_total": 243793,
+  "agent_seconds_per_run": 58.0
+ },
+ "hard|sonnet:xhigh": {
+  "set": "hard",
+  "config": "sonnet:xhigh",
+  "runs": 30,
+  "passes": 27,
+  "pass_rate_95ci": [
+   0.744,
+   0.965
+  ],
+  "code_change_passes": 24,
+  "code_change_runs": 24,
+  "cost_usd_total": 14.371,
+  "cost_usd_per_run": 0.479,
+  "cost_usd_per_pass": 0.5323,
+  "output_tokens_total": 605910,
+  "agent_seconds_per_run": 144.6
+ }
+}

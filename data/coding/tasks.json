@@ -1,0 +1,220 @@
+[
+ {
+  "id": "locate-1",
+  "set": "easy",
+  "type": "locate",
+  "level": 1,
+  "locations": 5,
+  "description": "Find a function's definition and its 4 call sites. The name is unique."
+ },
+ {
+  "id": "locate-2",
+  "set": "easy",
+  "type": "locate",
+  "level": 2,
+  "locations": 3,
+  "description": "Find an interface method's declaration, its implementation and its one call site, ignoring a same-named method on another class and two calls to it."
+ },
+ {
+  "id": "locate-3",
+  "set": "easy",
+  "type": "locate",
+  "level": 3,
+  "locations": 3,
+  "description": "Find an HTTP handler, its route registration, and the front-end code that requests the endpoint, ignoring many logging calls and a variable with the same name."
+ },
+ {
+  "id": "fix-1-near",
+  "set": "easy",
+  "type": "fix",
+  "level": 1,
+  "bugs": 1,
+  "tests_that_must_pass": 1,
+  "hidden_test_files": 0,
+  "report_words": 156,
+  "description": "A one-line logic slip makes a tool report failed commands as successful. The report describes that tool, and a visible test fails."
+ },
+ {
+  "id": "fix-2-far",
+  "set": "easy",
+  "type": "fix",
+  "level": 2,
+  "bugs": 1,
+  "tests_that_must_pass": 1,
+  "hidden_test_files": 0,
+  "report_words": 194,
+  "description": "A two-line early exit in a domain object drops tools when several skills are selected. The report describes only an HTTP preview endpoint and agent behavior; a visible test fails."
+ },
+ {
+  "id": "feature-1-bf88a3f",
+  "set": "easy",
+  "type": "feature",
+  "level": 1,
+  "reference_src_files": 1,
+  "reference_lines_added": 33,
+  "hidden_tests": 6,
+  "brief_words": 378,
+  "description": "Re-implement a real commit, a model adapter's request payload, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "feature-2-ec8bef6",
+  "set": "easy",
+  "type": "feature",
+  "level": 2,
+  "reference_src_files": 2,
+  "reference_lines_added": 25,
+  "hidden_tests": 4,
+  "brief_words": 375,
+  "description": "Re-implement a real commit, a CLI flag for full-screen mode, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "feature-3-d1d25cf",
+  "set": "easy",
+  "type": "feature",
+  "level": 3,
+  "reference_src_files": 5,
+  "reference_lines_added": 41,
+  "hidden_tests": 4,
+  "brief_words": 382,
+  "description": "Re-implement a real commit, opt-in WebSocket token auth, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "feature-4-43a549e",
+  "set": "easy",
+  "type": "feature",
+  "level": 4,
+  "reference_src_files": 8,
+  "reference_lines_added": 114,
+  "hidden_tests": 3,
+  "brief_words": 324,
+  "description": "Re-implement a real commit, persistent sessions that survive restarts, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "review-1-b0b1a97",
+  "set": "easy",
+  "type": "review",
+  "level": 1,
+  "planted_bugs": 0,
+  "description": "A real commit's diff with no planted bugs. A clean review should report nothing."
+ },
+ {
+  "id": "review-2-e966b08",
+  "set": "easy",
+  "type": "review",
+  "level": 2,
+  "planted_bugs": 1,
+  "description": "A real commit's diff with 1 planted bug: two Markdown rules in a front-end renderer run in the wrong order."
+ },
+ {
+  "id": "review-3-0c62b65",
+  "set": "easy",
+  "type": "review",
+  "level": 3,
+  "planted_bugs": 2,
+  "description": "A real commit's diff with 2 planted bugs: a shutdown wait loop re-sends the termination signal, and the PID file records the parent's PID."
+ },
+ {
+  "id": "feature-5-5e70762",
+  "set": "hard",
+  "type": "feature",
+  "level": 5,
+  "reference_src_files": 4,
+  "reference_lines_added": 188,
+  "hidden_tests": 4,
+  "brief_words": 430,
+  "description": "Re-implement a real commit, a SQLite and JSONL storage layer, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "feature-6-237d79f",
+  "set": "hard",
+  "type": "feature",
+  "level": 6,
+  "reference_src_files": 9,
+  "reference_lines_added": 196,
+  "hidden_tests": 7,
+  "brief_words": 490,
+  "description": "Re-implement a real commit, model-driven tool calling, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "feature-7-e34653c",
+  "set": "hard",
+  "type": "feature",
+  "level": 7,
+  "reference_src_files": 15,
+  "reference_lines_added": 602,
+  "hidden_tests": 32,
+  "brief_words": 720,
+  "description": "Re-implement a real commit, retrieval-based skill selection, from a ticket; graded by the commit's own tests."
+ },
+ {
+  "id": "feature-terse-d1d25cf",
+  "set": "hard",
+  "type": "feature",
+  "level": 8,
+  "reference_src_files": 5,
+  "reference_lines_added": 41,
+  "hidden_tests": 4,
+  "brief_words": 70,
+  "description": "The 5-file WebSocket token-auth feature, briefed in a 70-word ticket."
+ },
+ {
+  "id": "feature-terse-43a549e",
+  "set": "hard",
+  "type": "feature",
+  "level": 8,
+  "reference_src_files": 8,
+  "reference_lines_added": 114,
+  "hidden_tests": 3,
+  "brief_words": 115,
+  "description": "The 8-file session-persistence feature, briefed in a 115-word ticket."
+ },
+ {
+  "id": "fix-3-hidden-far",
+  "set": "hard",
+  "type": "fix",
+  "level": 3,
+  "bugs": 1,
+  "tests_that_must_pass": 5,
+  "hidden_test_files": 4,
+  "report_words": 160,
+  "description": "A serialization option in the storage layer drops each stored event's type. It shows only when replaying a session over WebSocket, and the 5 tests that would catch it are hidden."
+ },
+ {
+  "id": "fix-4-two-bugs",
+  "set": "hard",
+  "type": "fix",
+  "level": 4,
+  "bugs": 2,
+  "tests_that_must_pass": 2,
+  "hidden_test_files": 1,
+  "report_words": 136,
+  "description": "Two bugs (a misspelled environment variable and a renamed query parameter) behind one symptom. Only one has a visible failing test."
+ },
+ {
+  "id": "fix-5-misleading",
+  "set": "hard",
+  "type": "fix",
+  "level": 5,
+  "bugs": 1,
+  "tests_that_must_pass": 1,
+  "hidden_test_files": 1,
+  "report_words": 184,
+  "description": "A model-adapter bug breaks tool-call arguments for one provider. The report guesses the tool registry is at fault, and the test that would catch the bug is hidden."
+ },
+ {
+  "id": "review-4-58f2bbe",
+  "set": "hard",
+  "type": "review",
+  "level": 4,
+  "planted_bugs": 2,
+  "description": "A real commit's diff (built-in tools and shell hardening) with 2 subtle planted bugs that the existing tests don't catch."
+ },
+ {
+  "id": "review-5-4dd880a",
+  "set": "hard",
+  "type": "review",
+  "level": 5,
+  "planted_bugs": 3,
+  "description": "A real commit's diff (two model adapters) with 3 subtle planted bugs that the existing tests don't catch. One, a catch-all exception handler, is arguably not a defect."
+ }
+]

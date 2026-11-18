@@ -1,0 +1,122 @@
+[
+ {
+  "id": "mult-L1",
+  "family": "mult",
+  "level": 1,
+  "param": 4,
+  "problem": "Compute the exact product 4446 \u00d7 4505. The answer is a single integer with no commas.",
+  "answer": "20029230"
+ },
+ {
+  "id": "mult-L2",
+  "family": "mult",
+  "level": 2,
+  "param": 6,
+  "problem": "Compute the exact product 766311 \u00d7 524177. The answer is a single integer with no commas.",
+  "answer": "401682601047"
+ },
+ {
+  "id": "mult-L3",
+  "family": "mult",
+  "level": 3,
+  "param": 8,
+  "problem": "Compute the exact product 55276285 \u00d7 77677932. The answer is a single integer with no commas.",
+  "answer": "4293747507442620"
+ },
+ {
+  "id": "mult-L4",
+  "family": "mult",
+  "level": 4,
+  "param": 10,
+  "problem": "Compute the exact product 8074205922 \u00d7 3468295669. The answer is a single integer with no commas.",
+  "answer": "28003733429886751818"
+ },
+ {
+  "id": "mult-L5",
+  "family": "mult",
+  "level": 5,
+  "param": 12,
+  "problem": "Compute the exact product 308331379586 \u00d7 107248202047. The answer is a single integer with no commas.",
+  "answer": "33067986095269579212542"
+ },
+ {
+  "id": "trace-L1",
+  "family": "trace",
+  "level": 1,
+  "param": 10,
+  "problem": "Execute this Python code mentally (Python semantics; % always returns a non-negative result here) and give the final values of a, b, c, d.\n\n```python\na, b, c, d = 3, 7, 2, 5\nc, d = d, c\nc = (c * d + 1) % 31\nd, b = b, d\nb = (b + 1 * a) % 23\nb = (b * d + 3) % 47\nb = (b + 7 * a) % 23\nb, c = c, b\nb = (b + 7 * d) % 17\nb, c = c, b\nb, d = d, b\n```\n\nAnswer format: four integers separated by commas, in order a,b,c,d.",
+  "answer": "3,7,9,13"
+ },
+ {
+  "id": "trace-L2",
+  "family": "trace",
+  "level": 2,
+  "param": 20,
+  "problem": "Execute this Python code mentally (Python semantics; % always returns a non-negative result here) and give the final values of a, b, c, d.\n\n```python\na, b, c, d = 3, 7, 2, 5\nif a > b:\n    c = (c + 7) % 47\nelse:\n    a = (a + b) % 47\nd = (d + 1 * a) % 17\nd = (d * c + 1) % 23\na = (a - c) % 23\nif b > d:\n    c = (c + 7) % 17\nelse:\n    b = (b + d) % 17\nif d > b:\n    c = (c + 1) % 17\nelse:\n    d = (d + b) % 17\nif a > c:\n    b = (b + 2) % 17\nelse:\n    a = (a + c) % 17\nd = (d + 9 * a) % 47\na = (a * c + 8) % 47\nc = (c + 6 * d) % 17\nc = (c * d + 1) % 31\na = (a - c) % 47\nb = (b * a + 8) % 23\nc, d = d, c\nc = (c + 8 * d) % 31\nif c > b:\n    d = (d + 2) % 31\nelse:\n    c = (c + b) % 31\na = (a + 5 * c) % 23\na, d = d, a\nif d > c:\n    b = (b + 1) % 17\nelse:\n    d = (d + c) % 17\nd = (d * b + 4) % 23\n```\n\nAnswer format: four integers separated by commas, in order a,b,c,d.",
+  "answer": "1,8,16,15"
+ },
+ {
+  "id": "trace-L3",
+  "family": "trace",
+  "level": 3,
+  "param": 40,
+  "problem": "Execute this Python code mentally (Python semantics; % always returns a non-negative result here) and give the final values of a, b, c, d.\n\n```python\na, b, c, d = 3, 7, 2, 5\nd = (d - c) % 23\nd = (d - b) % 31\nc, a = a, c\nc = (c - d) % 31\nif c > a:\n    b = (b + 4) % 47\nelse:\n    c = (c + a) % 47\nif b > a:\n    c = (c + 5) % 23\nelse:\n    b = (b + a) % 23\na = (a - b) % 47\nb = (b * c + 2) % 31\nc, a = a, c\nd = (d + 1 * a) % 31\nc, d = d, c\nc = (c * b + 7) % 47\nc = (c + 8 * a) % 31\nif d > c:\n    a = (a + 7) % 47\nelse:\n    d = (d + c) % 47\na = (a + 4 * c) % 23\nif b > c:\n    d = (d + 5) % 31\nelse:\n    b = (b + c) % 31\nc = (c + 7 * d) % 31\nif c > b:\n    a = (a + 1) % 17\nelse:\n    c = (c + b) % 17\nc = (c - a) % 31\nif d > b:\n    a = (a + 9) % 31\nelse:\n    d = (d + b) % 31\nd = (d * c + 1) % 47\nd, a = a, d\nif c > b:\n    a = (a + 5) % 47\nelse:\n    c = (c + b) % 47\nd = (d * b + 7) % 47\nb = (b + 8 * d) % 47\nd = (d * a + 1) % 31\nc = (c * a + 1) % 17\nc, b = b, c\nif c > a:\n    b = (b + 5) % 17\nelse:\n    c = (c + a) % 17\na = (a + 9 * d) % 17\na = (a * c + 5) % 17\nd, b = b, d\na, d = d, a\na, d = d, a\na, d = d, a\na, b = b, a\na = (a * c + 7) % 31\nc = (c * b + 2) % 17\nb = (b * a + 2) % 23\nd = (d - c) % 31\n```\n\nAnswer format: four integers separated by commas, in order a,b,c,d.",
+  "answer": "13,17,15,21"
+ },
+ {
+  "id": "trace-L4",
+  "family": "trace",
+  "level": 4,
+  "param": 80,
+  "problem": "Execute this Python code mentally (Python semantics; % always returns a non-negative result here) and give the final values of a, b, c, d.\n\n```python\na, b, c, d = 3, 7, 2, 5\nc, b = b, c\nc = (c - d) % 17\nd = (d * c + 6) % 23\nif c > a:\n    d = (d + 3) % 31\nelse:\n    c = (c + a) % 31\nc = (c + 1 * b) % 47\nif b > d:\n    a = (a + 4) % 31\nelse:\n    b = (b + d) % 31\nc = (c + 1 * d) % 47\nif d > a:\n    b = (b + 4) % 47\nelse:\n    d = (d + a) % 47\nd = (d + 8 * a) % 47\na = (a * b + 1) % 31\nc = (c * a + 7) % 31\nb, c = c, b\nd = (d + 9 * b) % 17\nif c > d:\n    a = (a + 9) % 31\nelse:\n    c = (c + d) % 31\nif d > a:\n    b = (b + 5) % 47\nelse:\n    d = (d + a) % 47\nif d > a:\n    b = (b + 2) % 31\nelse:\n    d = (d + a) % 31\nd, b = b, d\na = (a - c) % 23\nc = (c - d) % 47\na = (a - b) % 23\na, d = d, a\nc, d = d, c\na = (a * d + 2) % 31\nc, b = b, c\nd = (d + 8 * a) % 31\nc, b = b, c\nif b > a:\n    c = (c + 3) % 23\nelse:\n    b = (b + a) % 23\na = (a * d + 7) % 17\nc = (c - b) % 17\na = (a * c + 6) % 31\nif d > a:\n    b = (b + 9) % 17\nelse:\n    d = (d + a) % 17\na = (a + 2 * c) % 47\nif b > d:\n    c = (c + 6) % 31\nelse:\n    b = (b + d) % 31\na = (a * c + 3) % 47\nb = (b - c) % 31\nif c > d:\n    a = (a + 8) % 17\nelse:\n    c = (c + d) % 17\na = (a * d + 5) % 47\nif a > d:\n    b = (b + 4) % 47\nelse:\n    a = (a + d) % 47\nd = (d * a + 6) % 17\na = (a + 2 * c) % 47\na = (a * c + 5) % 23\nd = (d * b + 4) % 31\nc, a = a, c\nif a > c:\n    b = (b + 4) % 17\nelse:\n    a = (a + c) % 17\nd = (d * a + 5) % 31\na = (a - c) % 47\nb = (b + 4 * d) % 31\na = (a + 6 * c) % 17\nif c > a:\n    d = (d + 2) % 23\nelse:\n    c = (c + a) % 23\nif d > a:\n    b = (b + 2) % 23\nelse:\n    d = (d + a) % 23\nb = (b * d + 5) % 47\nd, b = b, d\nif a > d:\n    b = (b + 9) % 23\nelse:\n    a = (a + d) % 23\nif d > c:\n    b = (b + 2) % 47\nelse:\n    d = (d + c) % 47\nb = (b - c) % 47\nc, b = b, c\nd = (d * b + 2) % 17\nb = (b - c) % 23\nd = (d * a + 1) % 23\nd, c = c, d\nd, b = b, d\nif a > d:\n    b = (b + 8) % 47\nelse:\n    a = (a + d) % 47\nif a > d:\n    b = (b + 3) % 23\nelse:\n    a = (a + d) % 23\nb = (b * c + 7) % 17\nb = (b * d + 8) % 17\nb = (b - a) % 31\nd, a = a, d\nif b > d:\n    c = (c + 8) % 47\nelse:\n    b = (b + d) % 47\nb, d = d, b\nc = (c + 7 * d) % 23\nif b > d:\n    c = (c + 9) % 17\nelse:\n    b = (b + d) % 17\na = (a * d + 4) % 23\nd = (d + 7 * c) % 47\nd = (d * a + 6) % 31\nb = (b + 9 * a) % 47\nd = (d - a) % 17\nif a > d:\n    c = (c + 3) % 47\nelse:\n    a = (a + d) % 47\nif b > a:\n    d = (d + 6) % 31\nelse:\n    b = (b + a) % 31\nc, a = a, c\nc = (c + 3 * d) % 23\n```\n\nAnswer format: four integers separated by commas, in order a,b,c,d.",
+  "answer": "3,6,13,3"
+ },
+ {
+  "id": "trace-L5",
+  "family": "trace",
+  "level": 5,
+  "param": 160,
+  "problem": "Execute this Python code mentally (Python semantics; % always returns a non-negative result here) and give the final values of a, b, c, d.\n\n```python\na, b, c, d = 3, 7, 2, 5\nd = (d + 5 * a) % 31\nd = (d - a) % 23\nif b > c:\n    d = (d + 7) % 31\nelse:\n    b = (b + c) % 31\nb, d = d, b\nc = (c + 2 * b) % 23\nc = (c + 6 * a) % 47\nc = (c - a) % 31\nd, a = a, d\na, b = b, a\na = (a + 2 * c) % 31\nif d > b:\n    c = (c + 8) % 31\nelse:\n    d = (d + b) % 31\nc = (c * b + 1) % 31\nd = (d + 7 * c) % 31\nif b > c:\n    d = (d + 3) % 17\nelse:\n    b = (b + c) % 17\nc = (c - a) % 17\na = (a * d + 3) % 47\nd, b = b, d\na = (a * b + 8) % 47\na = (a * c + 3) % 47\nc = (c - d) % 31\nb = (b - a) % 31\nd = (d * b + 9) % 23\na = (a + 3 * d) % 47\nif d > b:\n    c = (c + 8) % 17\nelse:\n    d = (d + b) % 17\nb = (b - c) % 17\nd = (d + 8 * c) % 47\na = (a + 8 * c) % 47\nd = (d - c) % 17\nd, b = b, d\na = (a - c) % 17\nc = (c + 7 * d) % 31\na = (a + 8 * c) % 17\nd = (d * b + 7) % 23\na, d = d, a\na = (a - c) % 17\nc, b = b, c\nc, b = b, c\nc = (c + 3 * a) % 31\nif c > a:\n    b = (b + 7) % 17\nelse:\n    c = (c + a) % 17\na, d = d, a\nc, a = a, c\nb, d = d, b\na = (a - c) % 47\nd = (d * c + 2) % 31\nif a > d:\n    b = (b + 8) % 17\nelse:\n    a = (a + d) % 17\nc = (c + 8 * d) % 47\nd, c = c, d\nd = (d * b + 5) % 17\nif a > d:\n    b = (b + 3) % 23\nelse:\n    a = (a + d) % 23\nc = (c * d + 7) % 47\nc = (c - b) % 23\na = (a * d + 2) % 31\nb = (b - c) % 47\na = (a * c + 4) % 17\na, b = b, a\nc, d = d, c\nd = (d + 6 * c) % 17\na = (a * d + 6) % 31\na = (a - d) % 23\na = (a - c) % 31\nd = (d - a) % 31\nd, c = c, d\nif b > c:\n    d = (d + 5) % 17\nelse:\n    b = (b + c) % 17\nd, c = c, d\nc = (c - d) % 17\nd = (d - b) % 31\nd = (d + 8 * b) % 23\nd = (d + 1 * a) % 17\nd, c = c, d\na, b = b, a\nb = (b - c) % 31\nif a > d:\n    c = (c + 8) % 17\nelse:\n    a = (a + d) % 17\nif b > c:\n    d = (d + 6) % 31\nelse:\n    b = (b + c) % 31\nb = (b - a) % 47\na = (a - c) % 17\na, d = d, a\nd = (d * b + 8) % 17\nd = (d - a) % 31\nif a > c:\n    b = (b + 6) % 23\nelse:\n    a = (a + c) % 23\na, c = c, a\nb, c = c, b\nif c > b:\n    d = (d + 2) % 17\nelse:\n    c = (c + b) % 17\nb = (b * a + 7) % 47\nif c > a:\n    b = (b + 9) % 23\nelse:\n    c = (c + a) % 23\na = (a * c + 6) % 23\nc = (c - a) % 31\na, b = b, a\na, b = b, a\nb = (b - c) % 17\nb, d = d, b\nc, a = a, c\nc, b = b, c\na = (a * b + 9) % 23\nc = (c * a + 5) % 31\nc, b = b, c\nc = (c + 8 * b) % 47\nd = (d + 3 * c) % 47\nif c > b:\n    d = (d + 9) % 23\nelse:\n    c = (c + b) % 23\nif a > d:\n    b = (b + 9) % 23\nelse:\n    a = (a + d) % 23\na, b = b, a\nb = (b * a + 3) % 47\nif a > b:\n    c = (c + 8) % 23\nelse:\n    a = (a + b) % 23\nc = (c * d + 8) % 17\nc = (c * a + 6) % 23\nd = (d + 1 * c) % 23\nd = (d + 4 * c) % 23\nif a > c:\n    d = (d + 2) % 17\nelse:\n    a = (a + c) % 17\nif a > d:\n    b = (b + 2) % 17\nelse:\n    a = (a + d) % 17\nc, b = b, c\nif c > b:\n    d = (d + 2) % 23\nelse:\n    c = (c + b) % 23\nif b > a:\n    d = (d + 9) % 31\nelse:\n    b = (b + a) % 31\nb = (b * a + 8) % 31\nif b > c:\n    d = (d + 4) % 23\nelse:\n    b = (b + c) % 23\na = (a + 9 * d) % 47\nc = (c + 1 * b) % 23\nd = (d * c + 2) % 23\nc = (c * a + 4) % 17\nb = (b - a) % 17\na = (a - d) % 23\nd = (d + 5 * a) % 17\nd, a = a, d\nc, b = b, c\nb = (b - d) % 31\nd, c = c, d\na = (a - b) % 23\nb = (b - c) % 31\nc = (c + 9 * b) % 23\nif b > c:\n    a = (a + 6) % 31\nelse:\n    b = (b + c) % 31\na = (a * d + 5) % 23\na = (a + 1 * d) % 31\nd = (d - b) % 31\nd, b = b, d\nb = (b * a + 6) % 47\na = (a * c + 2) % 17\nif b > d:\n    c = (c + 1) % 31\nelse:\n    b = (b + d) % 31\nc = (c + 7 * a) % 23\nc, a = a, c\nb = (b - d) % 17\nb = (b - c) % 17\nc = (c * d + 1) % 17\nd = (d - b) % 23\nc, d = d, c\na = (a * c + 3) % 31\nb = (b + 3 * a) % 17\nb = (b + 8 * d) % 47\nc = (c - d) % 47\nd = (d - b) % 17\nb = (b * a + 9) % 47\nb = (b - d) % 17\nb = (b - a) % 17\nb = (b - a) % 47\nif b > c:\n    a = (a + 6) % 23\nelse:\n    b = (b + c) % 23\nif d > c:\n    b = (b + 4) % 47\nelse:\n    d = (d + c) % 47\nc = (c * a + 4) % 17\nif d > c:\n    a = (a + 9) % 47\nelse:\n    d = (d + c) % 47\na = (a + 8 * b) % 17\nd = (d + 6 * c) % 17\nb = (b + 7 * a) % 31\nd = (d + 6 * a) % 31\nif d > b:\n    a = (a + 5) % 31\nelse:\n    d = (d + b) % 31\n```\n\nAnswer format: four integers separated by commas, in order a,b,c,d.",
+  "answer": "15,17,4,25"
+ },
+ {
+  "id": "logic-L1",
+  "family": "logic",
+  "level": 1,
+  "param": 4,
+  "problem": "4 people (Ana, Ben, Cal, Dee) sit in a row of seats numbered 1 to 4, left to right. Exactly one arrangement satisfies all clues:\n\n1. Cal sits directly next to Dee.\n2. Ben does not sit next to Dee.\n3. Ana does not sit next to Ben.\n4. Cal sits somewhere to the left of Dee.\n\nAnswer format: the names in seat order 1..N, separated by commas.",
+  "answer": "Ben,Cal,Dee,Ana"
+ },
+ {
+  "id": "logic-L2",
+  "family": "logic",
+  "level": 2,
+  "param": 5,
+  "problem": "5 people (Ana, Ben, Cal, Dee, Eli) sit in a row of seats numbered 1 to 5, left to right. Exactly one arrangement satisfies all clues:\n\n1. There are exactly 1 people between Cal and Dee.\n2. There are exactly 0 people between Dee and Eli.\n3. Cal sits somewhere to the left of Ana.\n4. Ben sits directly next to Eli.\n\nAnswer format: the names in seat order 1..N, separated by commas.",
+  "answer": "Cal,Ana,Dee,Eli,Ben"
+ },
+ {
+  "id": "logic-L3",
+  "family": "logic",
+  "level": 3,
+  "param": 6,
+  "problem": "6 people (Ana, Ben, Cal, Dee, Eli, Fay) sit in a row of seats numbered 1 to 6, left to right. Exactly one arrangement satisfies all clues:\n\n1. Ana sits somewhere to the left of Ben.\n2. There are exactly 0 people between Fay and Eli.\n3. There are exactly 2 people between Eli and Ben.\n4. Dee sits somewhere to the left of Cal.\n5. There are exactly 1 people between Fay and Ben.\n6. Fay sits somewhere to the left of Eli.\n7. Cal does not sit next to Ben.\n\nAnswer format: the names in seat order 1..N, separated by commas.",
+  "answer": "Ana,Ben,Dee,Fay,Eli,Cal"
+ },
+ {
+  "id": "logic-L4",
+  "family": "logic",
+  "level": 4,
+  "param": 7,
+  "problem": "7 people (Ana, Ben, Cal, Dee, Eli, Fay, Gus) sit in a row of seats numbered 1 to 7, left to right. Exactly one arrangement satisfies all clues:\n\n1. There are exactly 1 people between Eli and Dee.\n2. There are exactly 2 people between Gus and Ana.\n3. Ana does not sit next to Cal.\n4. There are exactly 2 people between Dee and Fay.\n5. Eli does not sit next to Ana.\n6. There are exactly 0 people between Dee and Ana.\n7. Fay is not in seat 2.\n\nAnswer format: the names in seat order 1..N, separated by commas.",
+  "answer": "Eli,Cal,Dee,Ana,Ben,Fay,Gus"
+ },
+ {
+  "id": "logic-L5",
+  "family": "logic",
+  "level": 5,
+  "param": 8,
+  "problem": "8 people (Ana, Ben, Cal, Dee, Eli, Fay, Gus, Hal) sit in a row of seats numbered 1 to 8, left to right. Exactly one arrangement satisfies all clues:\n\n1. Cal sits directly next to Dee.\n2. There are exactly 0 people between Hal and Dee.\n3. There are exactly 0 people between Ben and Cal.\n4. Gus sits somewhere to the left of Dee.\n5. There are exactly 0 people between Fay and Ana.\n6. There are exactly 3 people between Cal and Ana.\n7. Eli sits somewhere to the left of Fay.\n8. There are exactly 1 people between Ben and Eli.\n\nAnswer format: the names in seat order 1..N, separated by commas.",
+  "answer": "Eli,Gus,Ben,Cal,Dee,Hal,Fay,Ana"
+ }
+]

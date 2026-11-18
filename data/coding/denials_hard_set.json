@@ -1,0 +1,8 @@
+{
+ "chained command (;, ||, pipe or loop)": 188,
+ "uv": 24,
+ "sed": 15,
+ "mkdir": 5,
+ "python3": 1,
+ "mv": 1
+}
