@@ -46,7 +46,7 @@
   "description": "A two-line early exit in a domain object drops tools when several skills are selected. The report describes only an HTTP preview endpoint and agent behavior; a visible test fails."
  },
  {
-  "id": "feature-1-bf88a3f",
+  "id": "feature-1",
   "set": "easy",
   "type": "feature",
   "level": 1,
@@ -57,7 +57,7 @@
   "description": "Re-implement a real commit, a model adapter's request payload, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "feature-2-ec8bef6",
+  "id": "feature-2",
   "set": "easy",
   "type": "feature",
   "level": 2,
@@ -68,7 +68,7 @@
   "description": "Re-implement a real commit, a CLI flag for full-screen mode, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "feature-3-d1d25cf",
+  "id": "feature-3",
   "set": "easy",
   "type": "feature",
   "level": 3,
@@ -79,7 +79,7 @@
   "description": "Re-implement a real commit, opt-in WebSocket token auth, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "feature-4-43a549e",
+  "id": "feature-4",
   "set": "easy",
   "type": "feature",
   "level": 4,
@@ -90,7 +90,7 @@
   "description": "Re-implement a real commit, persistent sessions that survive restarts, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "review-1-b0b1a97",
+  "id": "review-1",
   "set": "easy",
   "type": "review",
   "level": 1,
@@ -98,7 +98,7 @@
   "description": "A real commit's diff with no planted bugs. A clean review should report nothing."
  },
  {
-  "id": "review-2-e966b08",
+  "id": "review-2",
   "set": "easy",
   "type": "review",
   "level": 2,
@@ -106,7 +106,7 @@
   "description": "A real commit's diff with 1 planted bug: two Markdown rules in a front-end renderer run in the wrong order."
  },
  {
-  "id": "review-3-0c62b65",
+  "id": "review-3",
   "set": "easy",
   "type": "review",
   "level": 3,
@@ -114,7 +114,7 @@
   "description": "A real commit's diff with 2 planted bugs: a shutdown wait loop re-sends the termination signal, and the PID file records the parent's PID."
  },
  {
-  "id": "feature-5-5e70762",
+  "id": "feature-5",
   "set": "hard",
   "type": "feature",
   "level": 5,
@@ -125,7 +125,7 @@
   "description": "Re-implement a real commit, a SQLite and JSONL storage layer, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "feature-6-237d79f",
+  "id": "feature-6",
   "set": "hard",
   "type": "feature",
   "level": 6,
@@ -136,7 +136,7 @@
   "description": "Re-implement a real commit, model-driven tool calling, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "feature-7-e34653c",
+  "id": "feature-7",
   "set": "hard",
   "type": "feature",
   "level": 7,
@@ -147,7 +147,7 @@
   "description": "Re-implement a real commit, retrieval-based skill selection, from a ticket; graded by the commit's own tests."
  },
  {
-  "id": "feature-terse-d1d25cf",
+  "id": "feature-3-terse",
   "set": "hard",
   "type": "feature",
   "level": 8,
@@ -158,7 +158,7 @@
   "description": "The 5-file WebSocket token-auth feature, briefed in a 70-word ticket."
  },
  {
-  "id": "feature-terse-43a549e",
+  "id": "feature-4-terse",
   "set": "hard",
   "type": "feature",
   "level": 8,
@@ -202,7 +202,7 @@
   "description": "A model-adapter bug breaks tool-call arguments for one provider. The report guesses the tool registry is at fault, and the test that would catch the bug is hidden."
  },
  {
-  "id": "review-4-58f2bbe",
+  "id": "review-4",
   "set": "hard",
   "type": "review",
   "level": 4,
@@ -210,7 +210,7 @@
   "description": "A real commit's diff (built-in tools and shell hardening) with 2 subtle planted bugs that the existing tests don't catch."
  },
  {
-  "id": "review-5-4dd880a",
+  "id": "review-5",
   "set": "hard",
   "type": "review",
   "level": 5,

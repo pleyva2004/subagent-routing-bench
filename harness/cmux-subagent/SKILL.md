@@ -44,21 +44,21 @@ For unattended agents, use `dontAsk` with an allowlist in `--settings`: anything
 
 Choose both for each agent at launch. Always pass `--effort`. If you omit it, the agent inherits the user's default effort, which could be anything.
 
-This table comes from measurements made in November 2026 on one Python repo (augustine, about 150 files): 222 coding runs across every model and effort level, covering lookups, bug fixes, features touching 1 to 15 files, and code reviews, plus a no-tools reasoning test. Costs are API-equivalent dollars per successful task. The harness and results are in `~/.cache/coding-bench/`.
+This table comes from measurements made in November 2026 on one private Python repo of about 150 files: 222 coding runs across every model and effort level, covering lookups, bug fixes, features touching 1 to 15 files, and code reviews, plus a no-tools reasoning test. Costs are API-equivalent dollars per successful task. The harness and results are in `~/.cache/coding-bench/`.
 
 | Slice | Model and effort | What was measured |
 |---|---|---|
 | Lookups: find definitions and call sites, extract a value, yes/no checks | Haiku `low` | Every config got them right; Haiku costs about 1/20 as much per token |
 | Code changes: bug fixes, features up to ~15 files, test-backed refactors | Haiku `low` | 30/30 passed, at $0.04 per success on the hard tasks, about 1/5 of Sonnet `low` |
 | Code changes when wall-clock time matters | Sonnet `medium` | 30/30 passed, about 2x faster than Haiku `low` (43 s vs 78 s per run), about 5x the cost |
-| Code review | Haiku `low` and Sonnet `medium` in parallel on the same diff; merge their findings | Each model missed a different planted bug, at every effort level |
+| Code review | Haiku `low` and Sonnet `medium` in parallel on the same diff; merge their findings | Each model had a blind spot the other usually covered: every Haiku level missed one planted bug, and no Sonnet run flagged another |
 | Long exact reasoning with no tools, such as tracing code by hand | Sonnet `xhigh` | The only config that traced 1,300 statements correctly; Sonnet `low` to `high` failed at 600 |
 | `max` | Only when the user explicitly asks for it | 8x to 20x the cost of `low`, with no accuracy gain in any test |
 
-- Effort above `medium` bought nothing on coding tasks: Sonnet `xhigh` cost about 2.5x Sonnet `low` per success, with no gain.
-- Don't run Haiku above `medium`. At `high` and `xhigh` it took wrong shortcuts on easy tasks and gained nothing.
-- A second model beats more effort. Each model repeated its own mistakes at every effort level, so for a result that looks wrong, or a check that matters, re-run the slice on the other model instead of raising effort.
-- If a Haiku code change fails its tests, retry it once on Sonnet `medium`.
+- Effort above `medium` bought nothing on coding tasks: Sonnet `xhigh` cost about 2.2x to 2.6x Sonnet `low` per success, with no gain.
+- Don't run Haiku above `medium`. At `high` and `xhigh` it took a wrong shortcut on an easy no-tools task, and on coding it gained nothing over `low`.
+- A second model looks more useful than more effort. Some mistakes repeated at every effort level of one model while the other model usually caught them (a handful of cases, with exceptions). For a result that looks wrong, or a check that matters, re-run the slice on the other model instead of raising effort.
+- If a Haiku code change fails its tests, retry it once on Sonnet `medium` (not yet measured).
 - Outside what was measured (much larger or unfamiliar codebases, open-ended design work), start with Sonnet `medium`.
 - If a Sonnet slice seems to need more than `xhigh`, do it inline instead of delegating.
 

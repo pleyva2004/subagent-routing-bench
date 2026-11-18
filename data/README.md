@@ -15,6 +15,8 @@ Where a value is computed or inferred, the text says so. Field meanings for codi
 - Token fields are counts.
 - Intervals and rates are fractions from 0 to 1.
 - Coding files use `haiku` and `sonnet`. The reasoning file uses `claude-haiku-5-5` and `claude-sonnet-5-5`.
+- Task IDs are neutral labels: `feature-1` to `feature-7`, `review-1` to `review-5`, `locate-1` to `locate-3`, and `fix-1-near` to `fix-5-misleading`. `feature-3-terse` and `feature-4-terse` are the terse-ticket versions of `feature-3` and `feature-4`.
+- Line numbers in this file are 1-based.
 
 ---
 
@@ -30,13 +32,13 @@ One record per coding run. 272 records on 272 lines.
 | hard | 122–271 | `hard` | 150 | 149 (one superseded) |
 | hard | 272 | `hard-rerun` | 1 | 1 |
 
-Effective runs: 120 easy (12 tasks × 10 configs, one trial) and 150 hard (10 tasks × 5 configs × 3 trials). Counts are from reading the file, not from a script.
+Effective runs: 120 easy (12 tasks × 10 configs, one trial) and 150 hard (10 tasks × 5 configs × 3 trials).
 
 ### Fields on every row
 
 | Field | Units or values | Meaning |
 |---|---|---|
-| `task` | task ID | Matches `id` in `tasks.json`. Example: `review-5-4dd880a`. |
+| `task` | task ID | Matches `id` in `tasks.json`. Example: `review-5`. |
 | `type` | `locate`, `fix`, `feature`, `review` | Kind of task. |
 | `level` | integer | Ordinal label within the task set. Labels repeat across types, so this is not a calibrated difficulty scale. |
 | `set` | `easy`, `hard` | Task set. |
@@ -51,9 +53,9 @@ Effective runs: 120 easy (12 tasks × 10 configs, one trial) and 150 hard (10 ta
 | `tokens_out` | tokens | `output_tokens`, same summing rule. |
 | `tool_calls` | count | `tool_use` blocks in the run's assistant messages. Includes denied calls. |
 | `denied_tool_calls` | count | Tool results marked as errors whose text contains "denied" or "permission". This is a text match, so it is a heuristic. |
-| `agent_seconds` | seconds | Agent running time. The code stores this as turn durations in milliseconds (`turn_ms`). The analysis script divides by 1000. I did not confirm the conversion against the data. |
-| `wall_seconds` | seconds | Elapsed time from the start of worktree setup to the end of grading. Includes dependency sync. Greater than `agent_seconds` in every row I read. |
-| `cost_usd` | dollars | API-equivalent cost of the run (FACTS §5). The script that computes it is not in this repo. |
+| `agent_seconds` | seconds | Agent running time. `bench.py` records it as `turn_ms`, the sum of turn durations in milliseconds. |
+| `wall_seconds` | seconds | Elapsed time from the start of worktree setup to the end of grading. Includes dependency sync. Greater than `agent_seconds` in every row. |
+| `cost_usd` | dollars | API-equivalent cost of the run (FACTS §5), computed with the method in `analysis/cost_model.py` from the run's session transcript. The transcripts are not published. |
 
 ### Pass rules (from FACTS §1 and `bench.py`)
 
@@ -75,12 +77,12 @@ Effective runs: 120 easy (12 tasks × 10 configs, one trial) and 150 hard (10 ta
 |---|---|---|
 | `tests_run` | count | Tests in the grading run, after restoring tests and adding hidden ones. Varies by task, because each task starts from a different commit. |
 | `failures` | count | Tests that failed or errored in the grading run. |
-| `hidden_not_passing` | count | Required tests that did not pass. Inferred from `bench.py`'s `must_pass_missing` list. |
+| `hidden_not_passing` | count | Required tests that did not pass. Count of `bench.py`'s `must_pass_missing` list. |
 | `files_changed` | count | Files that differ from the base commit, including new files. |
-| `src_files_outside_reference` | count | Changed source files not in the task's reference list. Inferred from `bench.py` and `build_tasks.py`. For feature tasks the reference is the real commit's source files. For fix tasks it is the planted bug's file. |
+| `src_files_outside_reference` | count | Changed source files not in the task's reference list (`bench.py`'s `outside_expected`). For feature tasks the reference is the real commit's source files. For fix tasks it is the planted bug's file. |
 | `test_files_touched` | count | Changed files under the test folder, counted before the original tests are restored. Non-zero means the agent edited tests. |
-| `claimed_passed` | count or null | The passing-test count the reply reports, taken from its last pytest-style summary. Null when the reply has no such summary. This is the agent's claim, not a measurement, and it often differs from `tests_run`. Example: a feature run with `tests_run` 140 and `claimed_passed` 176. |
-| `claimed_all_pass` | boolean | True if the reply's last summary shows no failures, or says all tests pass. |
+| `claimed_passed` | count or null | The passing-test count the reply reports: the largest pytest-style passed count in the reply, normally the final full-suite run, not the last one. Null when the reply has no such summary. This is the agent's claim, not a measurement, and it often differs from `tests_run`. Example: a feature run with `tests_run` 140 and `claimed_passed` 176. |
+| `claimed_all_pass` | boolean | True if the summary used for `claimed_passed` shows no failures. If the reply has no pytest-style summary, true when the reply says all tests pass. |
 | `false_success_claim` | boolean | True if `claimed_all_pass` is true and grading failed. The only true value is on a superseded row (see below). |
 
 ### Fields on review rows
@@ -93,12 +95,12 @@ Effective runs: 120 easy (12 tasks × 10 configs, one trial) and 150 hard (10 ta
 
 ### Flags
 
-- **`superseded`** (true, or absent). The row stays in the file as a record. Totals in `costs.json` and in FACTS leave it out. Each superseded row has a `superseded_reason` and is followed by a rerun of the same task, model, effort, and trial.
+- **`superseded`** (true, or absent). The row stays in the file as a record. Totals in `costs.json` and in FACTS leave it out. Each superseded row has a `superseded_reason`. A rerun of the same task, model, effort and trial appears later in the file, as listed below.
 
   | Line | Task | Config, trial | Reason | Rerun |
   |---|---|---|---|---|
   | 35 | `locate-2` | haiku `high`, trial 1 | Harness: the allowlist denied a chained `echo`, and the agent gave up. | Line 121 (`easy-rerun`), pass |
-  | 207 | `feature-7-e34653c` | sonnet `high`, trial 2 | Harness: a hidden test file produced no results during grading. | Line 272 (`hard-rerun`), pass |
+  | 207 | `feature-7` | sonnet `high`, trial 2 | Harness: a hidden test file produced no results during grading. | Line 272 (`hard-rerun`), pass |
 
   The line 207 row also has `false_success_claim` true. Because it is superseded, no false success claim is counted in the results.
 
@@ -107,8 +109,8 @@ Effective runs: 120 easy (12 tasks × 10 configs, one trial) and 150 hard (10 ta
 
 ### Checks
 
-- Easy `haiku` `high`: the 12 effective rows sum to 153,914 output tokens (added by hand). That matches `costs.json`, which confirms it leaves out the superseded row and includes the rerun.
-- Easy `haiku` `high` has 11 passing rows. The one failure is `review-3-0c62b65`.
+- The 12 effective easy `haiku` `high` rows sum to 153,914 output tokens. This matches `costs.json`, which leaves out the superseded row (line 35) and includes the rerun (line 121).
+- Easy `haiku` `high` has 11 passing rows. The one failure is `review-3` (line 112).
 
 ---
 
@@ -118,7 +120,7 @@ An array of 22 objects: 12 easy, 10 hard. This is a summary. It is not the file 
 
 | Field | On types | Units | Meaning |
 |---|---|---|---|
-| `id` | all | string | Task ID, for example `fix-2-far` or `feature-terse-43a549e`. |
+| `id` | all | string | Task ID, for example `fix-2-far` or `feature-4-terse`. See Conventions for the full list. |
 | `set` | all | `easy`, `hard` | Task set. |
 | `type` | all | `locate`, `fix`, `feature`, `review` | Task kind. |
 | `level` | all | integer | Ordinal label within the set. |
@@ -146,37 +148,38 @@ One object with 15 keys: `easy|<model>:<effort>` for 10 configs and `hard|<model
 | `config` | `model:effort` | Config. |
 | `runs` | count | Effective runs. Superseded rows are excluded. |
 | `passes` | count | Runs with `status` `pass`. |
-| `pass_rate_95ci` | [low, high], fractions | Wilson 95% interval for `passes / runs`. Checked by hand: easy `haiku:low` (11/12) gives 0.646 to 0.985, which matches. |
+| `pass_rate_95ci` | [low, high], fractions | Wilson 95% interval for `passes / runs`. For example, easy `haiku:low` (11/12) gives 0.646 to 0.985. |
 | `code_change_passes` | count | Passing fix and feature runs. |
 | `code_change_runs` | count | Fix and feature runs. |
 | `cost_usd_total` | dollars | Sum of `cost_usd` over effective runs, rounded to 3 decimals. |
 | `cost_usd_per_run` | dollars | `cost_usd_total / runs`. |
 | `cost_usd_per_pass` | dollars | `cost_usd_total / passes`. Cost of failed runs is included in the numerator. |
 | `output_tokens_total` | tokens | Sum of `tokens_out` over effective runs. |
-| `agent_seconds_per_run` | seconds | Mean `agent_seconds` over effective runs. Naming-based; I did not re-derive it. |
+| `agent_seconds_per_run` | seconds | Mean `agent_seconds` over effective runs. |
 
 ---
 
 ## data/coding/denials_hard_set.json
 
-One object. Each key is a category of denied tool call. Each value is a count of denied calls across the hard-set runs.
+One object. Each key is a category of denied tool call. Each value is the number of those calls over the 150 effective hard-set runs, with each denied call counted once. The superseded run (line 207) is excluded and its replacement (line 272) is included.
 
-| Category | Count |
+| Category (key) | Count |
 |---|---|
-| chained command (`;`, `||`, pipe, or loop) | 188 |
-| `uv` | 24 |
+| `chained command (;, ||, pipe or loop)` | 154 |
+| `uv` | 15 |
 | `sed` | 15 |
-| `mkdir` | 5 |
+| `mkdir` | 3 |
 | `python3` | 1 |
 | `mv` | 1 |
+| **Total** | **189** |
 
-The categories sum to 234, which is the figure FACTS §4 uses. The file has no run IDs, so it cannot be traced to rows. See "Known issues" for a mismatch with `runs.jsonl`.
+The total equals the sum of `denied_tool_calls` over those 150 runs. The file has no run IDs, so its counts cannot be traced to individual rows.
 
 ---
 
 ## experiments/01-reasoning-ladder/results.jsonl
 
-One record per attempt, on 240 lines. 229 are runs. 11 are `skipped` rows, which have only the identity fields. The 229 matches FACTS §2.
+One record per attempt, on 240 lines. 229 are runs. 11 are `skipped` rows, which have only the identity fields. The 229 runs match FACTS §2.
 
 ### Fields
 
@@ -188,14 +191,14 @@ One record per attempt, on 240 lines. 229 are runs. 11 are `skipped` rows, which
 | `family` | `mult`, `trace`, `logic` | Task family. |
 | `level` | 1–10 | Difficulty level. `gen.py` writes levels 1–5 to `tasks.json` and 6–10 to `tasks2.json`. |
 | `status` | `pass`, `wrong`, `skipped` | Outcome. `skipped` means the chain stopped after two failures in a row, so the run was not made. `run.py` can also write `tool_violation`, `no_answer`, `timeout_or_err`, or `launch_fail`; none appear here. |
-| `got` | text | The answer after normalization, cut to 80 characters. For `mult`, digits only. For `trace`, comma-separated integers. For `logic`, comma-separated capitalized names. Empty when the `ANSWER:` line was blank. One example is Haiku `xhigh` `trace-L9`, which declined to answer. |
+| `got` | text | The answer after normalization, cut to 80 characters. For `mult`, digits only. For `trace`, comma-separated integers. For `logic`, comma-separated capitalized names. Empty when the `ANSWER:` line was blank. One example is Haiku `xhigh` `trace-L9` (line 239), which declined to answer. |
 | `want` | text | Expected answer, cut to 80 characters. |
 | `rc` | integer | Exit status of `claude-pane.sh collect`. 0 on every run row here. |
 | `wall_s` | seconds | Time from before launch to after collect returns. Includes pane setup. |
 | `tool_uses` | count | `tool_use` blocks in the session. 0 on every run row here, so no run used a tool. |
 | `output_tokens` | tokens | Output tokens summed over the session's assistant messages, counting each message ID once. |
 | `duration_ms` | milliseconds | The last `turn_duration` value in the session transcript. This is in milliseconds. `wall_s` is in seconds. |
-| `sid` | UUID | Claude Code session ID. The transcript is in `~/.claude/projects/*/<sid>.jsonl`, which is not in the repo. Present from line 121 on. Lines 1–120 do not have it. |
+| `sid` | UUID | Claude Code session ID. The transcript is in `~/.claude/projects/*/<sid>.jsonl`, which is not in the repo. Present on every run row from line 121 on. Absent on lines 1–120 and on all skipped rows. |
 
 Skipped rows have only `model`, `effort`, `task`, `family`, `level`, and `status`.
 
@@ -215,8 +218,7 @@ Seeds are fixed: 20261116 for stage 1 and 20261117 for stage 2.
 
 ## Known issues
 
-1. **Field names do not match the current harness.** The current `bench.py` writes `in`, `out`, `cache_write`, `cache_read`, `turn_ms`, `tool_uses`, `denied`, `must_pass_missing`, and `outside_expected`. The published file uses `tokens_in`, `tokens_out`, `tokens_cache_write`, `tokens_cache_read`, `agent_seconds`, `tool_calls`, `denied_tool_calls`, `hidden_not_passing`, and `src_files_outside_reference`. Some values also differ in shape: `test_files_touched` is a list in `bench.py` and a count here. `analyze_sweep.py` reads the `bench.py` names, so it will not read this file correctly. The published file came from a different version of the harness.
-2. **The cost script is not in the repo.** `cost_usd` and the totals in `costs.json` cannot be re-derived from the code here. The prices and multipliers are in FACTS §5.
-3. **The denial totals do not match.** The category file sums to 234. Summing `denied_tool_calls` over the 150 effective hard-set rows gives about 189 by hand. I did not confirm that sum with a script, and the two counts may use different rules. Check both with a script before quoting either.
-4. **Unknown effect of the regrade.** It is not stated whether any fix or feature grade changed when the pilot was regraded.
-5. **No `sid` in early reasoning rows.** Lines 1–120 of `results.jsonl` have no `sid`.
+1. **Field names do not match the current harness.** The current `bench.py` writes `in`, `out`, `cache_write`, `cache_read`, `turn_ms`, `tool_uses`, `denied`, `wall_s`, `changed` (a list), `must_pass_missing` (a list), `outside_expected` (a list), `sid`, and `err`. The published file uses `tokens_in`, `tokens_out`, `tokens_cache_write`, `tokens_cache_read`, `agent_seconds`, `tool_calls`, `denied_tool_calls`, `wall_seconds`, `files_changed`, `hidden_not_passing`, and `src_files_outside_reference`. Some values also differ in shape: `test_files_touched` is a list in `bench.py` and a count here. Locate and review rows also use different names. `analyze_sweep.py` reads the `bench.py` names, so it will not read this file correctly. The published file came from a different version of the harness.
+2. **Dollar figures cannot be reproduced from this repository alone.** `analysis/cost_model.py` documents the method and computes one session's cost from its transcript (`python3 analysis/cost_model.py <sonnet|haiku> <session-id>`). The transcripts are not published, so `cost_usd` and the totals in `costs.json` cannot be checked here. The prices and multipliers are in FACTS §5.
+3. **Unknown effect of the regrade.** It is not stated whether any fix or feature grade changed when the pilot was regraded.
+4. **No `sid` in early reasoning rows.** Lines 1–120 of `results.jsonl` have no `sid`, and skipped rows have none at any line.

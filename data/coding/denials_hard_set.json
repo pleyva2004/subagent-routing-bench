@@ -1,8 +1,8 @@
 {
- "chained command (;, ||, pipe or loop)": 188,
- "uv": 24,
+ "chained command (;, ||, pipe or loop)": 154,
+ "uv": 15,
  "sed": 15,
- "mkdir": 5,
+ "mkdir": 3,
  "python3": 1,
  "mv": 1
 }

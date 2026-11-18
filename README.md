@@ -8,10 +8,11 @@ Each sub-agent runs as its own interactive Claude Code session in a cmux termina
 
 ## Key findings
 
-- **Code trace was the only reasoning task that separated configs.** Longest program solved without tools: Haiku `low` 80 statements; Haiku `medium` and `high` 250; Haiku `xhigh` and Sonnet `low` and `medium` 400; Sonnet `high` 900; Sonnet `xhigh` 1,300, with no failure.
+- **Code trace separated the configs most clearly among the reasoning tasks.** Longest program solved without tools: Haiku `low` 80 statements; Haiku `medium` and `high` 250; Haiku `xhigh` and Sonnet `low` and `medium` 400; Sonnet `high` 900; Sonnet `xhigh` 1,300, with no failure. Multiplication failures appeared only in Haiku `low` and `medium`. Every config solved the seating puzzles.
 - **Easy coding set (12 tasks, 120 runs): almost everything passed.** Every config passed all locate, fix, and feature tasks. Only the two-bug review task separated configs: Sonnet `low`, `medium`, `high`, and `max` passed 12/12. Sonnet `xhigh` and every Haiku level passed 11/12.
-- **Hard coding set (10 tasks, 150 runs, three trials per config):** Haiku `low` passed 29/30, including 24/24 code changes, at $0.041 per successful task. Sonnet `medium` passed 27/30 at $0.210 per success. Sonnet `xhigh` passed 27/30 at $0.532. Of the 14 hard-set misses, 13 came from one review task with three planted bugs.
-- **Haiku is cheaper per success; effort above `medium` added cost without adding passes.** On the hard set, Haiku `low` cost about a fifth of Sonnet `low` per success ($0.041 vs $0.207). Sonnet `xhigh` cost $0.532 per success against $0.210 for Sonnet `medium`, with the same 27/30 pass count.
+- **Hard coding set (10 tasks, 150 runs, three trials per config):** Haiku `low` passed 29/30, including 24/24 code changes, at $0.041 per successful task. Sonnet `medium` passed 27/30 at $0.21 per completed task. Sonnet `xhigh` passed 27/30 at $0.532 per completed task. Of the 14 hard-set misses, 13 came from one review task with three planted bugs.
+- **Haiku is cheaper per success; effort above `medium` added cost without adding passes.** On the hard set, Haiku `low` cost about a fifth of Sonnet `low` per success ($0.041 vs $0.207). Sonnet `xhigh` cost about 2.2× (easy set) and 2.6× (hard set) Sonnet `low` per success. On the hard set, Sonnet `xhigh` cost $0.532 per completed task against $0.21 for Sonnet `medium`, with the same 27/30 pass count.
+- **Misses repeated across effort levels of one model.** On the easy two-bug review, every Haiku level missed the same planted bug, and Sonnet at `low`, `medium`, `high`, and `max` caught it. On the hard set, no Sonnet run at any of four levels flagged the same catch-all exception handler, and Haiku `low` flagged it in 2 of 3 runs. These are a handful of cases, with exceptions both ways: Sonnet `xhigh` shared Haiku's easy-set miss, and one Haiku `low` run shared Sonnet's hard-set miss. This is not an estimate.
 - **Routing rule adopted from these results:** Haiku `low` for lookups and code changes up to about 15 files; Sonnet `medium` when wall-clock time matters; Haiku `low` and Sonnet `medium` in parallel for review; Sonnet `xhigh` for long exact reasoning without tools; `max` only on explicit request.
 
 Coding runs cost about $24 (easy set) and $34 (hard set) at API-equivalent prices. These are estimates from transcripts, not billing data.
@@ -27,6 +28,9 @@ Coding runs cost about $24 (easy set) and $34 (hard set) at API-equivalent price
 
 ```
 analysis/FACTS.md                   Single source of numbers for the report
+analysis/assemble_report.py         Builds docs/index.md from docs/sections/
+analysis/cost_model.py              How dollar costs were computed
+analysis/figures.py                 Makes the charts in docs/assets/figures/
 data/README.md                      Data dictionary for the files below
 data/coding/runs.jsonl              One record per coding run (272 rows)
 data/coding/tasks.json              Summary of the 22 coding tasks (not the runnable task file)
@@ -53,7 +57,7 @@ mkdir -p ~/.claude/skills/cmux-subagent
 cp harness/cmux-subagent/* ~/.claude/skills/cmux-subagent/
 ```
 
-### Reasoning ladder (fully reproducible)
+### Reasoning ladder (re-runnable; results vary between runs)
 
 Ten levels for each of three families: multiplication, code trace, and seating logic. Tools are forbidden in every prompt, and any run that uses a tool is flagged.
 
@@ -89,6 +93,6 @@ The analysis scripts do not read the published `runs.jsonl` correctly. They use 
 
 ## Privacy and paths
 
-- The target repo is private. This repo contains no code, file or folder paths, function, class, or test names, or commit messages from it. Tasks are named by ID, for example `feature-7-e34653c`.
+- The target repo is private. This repo contains no code, file or folder paths, function, class, or test names, or commit messages from it. Tasks are named by ID, for example `feature-7`.
 - Some settings and scripts contain paths written as `/Users/<you>`. Replace them with your own home folder before running anything.
-- Data files describe tasks in generic terms only.
+- Data files describe tasks by behavior and size only. They contain no code, file paths, test names or commit messages from the private repository.
