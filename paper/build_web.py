@@ -101,8 +101,7 @@ def main() -> None:
     run(["pandoc", "paper-web.tex", "-f", "latex", "-t", "html5", "-s",
          "--citeproc", "--bibliography", str(PAPER / "references.bib"),
          "--mathml", "--number-sections",
-         "-M", "title=Routing Claude Code Sub-Agents by Model and Effort: A Case Study",
-         "-M", "author=Pablo Leyva",
+         "--metadata-file", str(PAPER / "web-meta.yaml"),  # title and author block, as in the PDF
          "-M", "reference-section-title=References", "-M", "link-citations=true",
          "-M", "document-css=false",
          "--css", "assets/paper.css",
